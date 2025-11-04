@@ -1,3 +1,304 @@
-<!doctype html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <!-- PAGE INFO -->
+    <meta charset="UTF-8" />
+    <!--MOBILE FIRST, RESPONSIVIDADE-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grupo 12 - Ana, Filipe, João, Nícolas, Pedro</title>
+
+    <!--ICONS-->
+
+    <link rel="stylesheet" href="assets/fonts/style.css" />
+
+    <!--Swiper-->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/swiper@8/swiper-bundle.min.css"
+    />
+
+    <!--STYLES-->
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!--FONTS-->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <header id="header" class="scroll">
+      <nav class="container">
+        <a class="logo" href="#">is<span>Universidade</span>.</a>
+        <!--menu-->
+        <div class="menu">
+          <ul class="grid">
+            <li><a class="title" href="#home">Início</a></li>
+            <li><a class="title" href="#cursos">Cursos</a></li>
+            <li><a class="title" href="#dicas">Dicas</a></li>
+            <li><a class="title" href="#about">Equipe</a></li>
+          </ul>
+        </div>
+        <!--/menu-->
+        <div class="toggle icon-menu"></div>
+        <div class="toggle icon-close"></div>
+      </nav>
+      <div class="button"><a href="#dicas">Login</a></div>
+    </header>
+
+    <main>
+      <!--home-->
+      <section class="section" id="home">
+        <div class="container grid">
+          <div class="image">
+            <img
+              src="assets/images/capa.jpeg"
+              alt="Vestibular 2026/1, faça sua matrícula"
+            />
+          </div>
+          <div class="text">
+            <h2 class="title">Matricule-se já!</h2>
+            <p>
+              Ingresse com vestibular, nota do Enem, transferência ou segunda graduação...
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider-1"></div>
+
+      <!--matricula-->
+      <section class="section" id="matricula">
+        <div class="container"> 
+          <div class="container grid">
+            <a href="#about"><img class="toggle" src="/assets/images/rematricula.gif"></a>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider-2"></div>
+      <!--cursos-->
+      <section class="section" id="cursos">
+        <div class="container grid">
+          <header>
+            <h2 class="title">Conheça nossas escolas</h2>
+            <p class="subtitle">
+              Você como protagonista da sua trajetória!
+              Valorizamos a formação integral do aluno para que ele 
+              seja livre, competente, solidário e empreendedor. 
+              Responda às mudanças do mundo com uma educação superior de excelência e 
+              mais de 50 anos de tradição...
+            </p>
+          </header>
+          <div class="cards grid">
+            <div class="card">
+              <h3 class="title">Escola Politécnica</h3>
+              <img src="assets\images\icons-tech.png"><br><br>
+              <p>
+                Repensar mercados e cocriar soluções inovadoras 
+                para transformar o mundo por meio da tecnologia.
+                <br><br>
+                <h3 class="title">Cursos</h3>
+                •	 Desenvolvimento de Sistemas<br><br>
+                •	 Ciência da Computação<br><br>
+                •	 Arquitetura e Urbanismo<br><br>
+                •	 Engenharia Civil<br><br>
+                •	 Engenharia da Computação<br><br>
+              </p>
+            </div>
+            <div class="card">
+              <h3 class="title">Escola de Saúde</h3>
+              <img src="assets\images\icons-medic.png"><br><br>
+              <p>
+                Trabalhar com o bem-estar das pessoas e aprender a cuidar da 
+                saúde humana com base na ciência e na tecnologia.
+                <br><br>
+                <h3 class="title">Cursos</h3>
+                •	 Medicina<br><br>
+                •	 Psicologia<br><br>
+                •	 Enfermagem<br><br>
+                •	 Gastronomia<br><br>
+                •	 Biomedicina<br><br>
+              </p>
+            </div>
+            <div class="card">
+              <h3 class="title">Escola de Gestão e Negócios</h3>
+              <img src="assets\images\icons-business.png"><br><br>
+              <p>
+                Desenvolver atividades práticas e inovadoras com foco 
+                no empreendedorismo e na gestão contemporânea.
+                <br><br>
+                <h3 class="title">Cursos</h3>
+                •	 Administração<br><br>
+                •	 Comércio Exterior<br><br>
+                •	 Gestão para Inovação e Liderança<br><br>
+                •	 Ciências Contábeis<br><br>
+                •	 Gestão Pública<br><br>
+              </p>
+            </div>
+            <div class="card">
+              <h3 class="title">Escola da Indústria Criativa</h3>
+              <img src="assets\images\icons-criative.png"><br><br>
+              <p>
+                Criar soluções inovadoras para um mundo mais diverso por meio da 
+                comunicação, criatividade, colaboração, arte e cultura.
+                <br><br>
+                <h3 class="title">Cursos</h3>
+                •	 Publicidade e Propaganda<br><br>
+                •	 Design<br><br>
+                •	 Jornalismo<br><br>
+                •	 Moda<br><br>
+                •	 Relações Públicas<br><br>
+              </p>
+            </div>
+            <div class="card">
+              <h3 class="title">Escola de Direito</h3>
+              <img src="assets\images\icons-law.png"><br><br>
+              <p>
+                Defender a ética e as liberdades individuais por meio da 
+                interpretação crítica dos diferentes contextos.
+                <br><br>
+                <h3 class="title">Cursos</h3>
+                •	 Direito<br><br>
+              </p>
+            </div>
+            <div class="card">
+              <h3 class="title">Escola de Humanidades</h3>
+              <img src="assets\images\icons-human.png"><br><br>
+              <p>
+                Pensar e criar iniciativas que promovam transformações 
+                sociais, construindo um futuro mais humano e ético.
+                <br><br>
+                <h3 class="title">Cursos</h3>
+                •	 Relações Internacionais<br><br>
+                •	 Pedagogia<br><br>
+                •	 História<br><br>
+                •	 Filosofia<br><br>
+                •	 Ciências Sociais<br><br>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider-1"></div>
+      <!--dicas-->
+      <section class="section" id="dicas">
+        <div class="container swiper">
+          <header>
+            <h2 class="title">Dicas para você melhorar nos seus estudos...</h2>
+          </header>
+          <div class="dicas swiper-container">
+            <div class="swiper-wrapper">
+              <div class="dicas swiper-slide">
+                <blockquote>
+                  <div>
+                    <img src="assets/images/maratona.jpg">
+                  </div>
+                  <p>
+                    <span>&ldquo;</span>
+                    Estude um pouco todos os dias: constância vence maratonas.
+                  </p>
+                </blockquote>
+              </div>
+              <div class="dicas swiper-slide">
+                <blockquote>
+                  <div>
+                    <img src="assets/images/professor.jpg">
+                  </div>
+                  <p>
+                    <span>&ldquo;</span>
+                    Explique o conteúdo como se estivesse ensinando: é o melhor teste de aprendizado.
+                  </p>
+                </blockquote>
+              </div>
+              <div class="dicas swiper-slide">
+                <blockquote>
+                  <div>
+                    <img src="assets/images/pomodoro.webp">
+                  </div>
+                  <p>
+                    <span>&ldquo;</span>
+                    Use o método Pomodoro: 25 minutos de foco, 5-15 de descanso.
+                  </p>
+                </blockquote>
+              </div>
+              <div class="dicas swiper-slide">
+                <blockquote>
+                  <div>
+                    <img src="assets/images/sono.jpg">
+                  </div>
+                  <p>
+                    <span>&ldquo;</span>
+                    Durma bem — o cérebro consolida a memória durante o sono.
+                  </p>
+                </blockquote>
+              </div>
+              <div class="dicas swiper-slide">
+                <blockquote>
+                  <div>
+                    <img src="assets/images/tempo.jpg">
+                  </div>
+                  <p>
+                    <span>&ldquo;</span>
+                    Tenha um horário fixo de estudo para criar hábito.
+                  </p>
+                </blockquote>
+              </div>
+            </div>
+            <!-- If we need pagination -->
+            <div class="swiper-pagination"></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider-2"></div>
+
+      <!--about-->
+      <section class="section" id="about">
+        <div class="container grid">
+          <div class="text">
+            <h2 class="title">Grupo 12</h2>
+            <p>
+              Site desenvolvido como entrega do GA de Programação Back-End - Unisinos
+            </p>
+          </div>
+
+          <div class="links">
+            <ul class="text">
+              <i>Integrantes do Grupo:</i>
+              <li><i>Ana Paula Campos Westphalen</i></li>
+              <li><i>Filipe Souza Dalpiaz</i></li>
+              <li><i>João Pedro Schulz Rocha</i></li>
+              <li><i>Nícolas Berlato Engelsdorff</i></li>
+              <li><i>Pedro Junior Carneiro Costa</i></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider-1"></div>
+    </main>
+    <!-- Footer-->
+    <footer class="section">
+      <div class="container grid">
+        <div class="brand">
+          <a class="logo logo-alt" href="#home">is<span>Universidade</span>.</a>
+          <p>©2025 Unisinos</p>
+          <p>Todos os direitos reservados.</p>
+        </div>
+      </div>
+    </footer>
+
+    <a href="#home" class="back-to-top"><i class="icon-arrow-up"></i></a>
+
+    <!--swiper-->
+    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js"></script>
+    <!--ScrollReveal-->
+    <script defer src="https://unpkg.com/scrollreveal"></script>
+    <!--MAINJS-->
+    <script defer src="js/main.js"></script>
+  </body>
 </html>
