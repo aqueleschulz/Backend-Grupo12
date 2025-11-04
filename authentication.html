@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            width: 100%; 
+        }
+
+        /* Um contêiner customizado para o card de login */
+        .login-card {
+            max-width: 420px;
+            width: 100%;
+            background: white;
+            padding: 3rem 2.5rem; 
+            border-radius: 0.25rem;
+            box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.08);
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font: 500 1rem var(--body-font);
+            color: var(--title-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #e4e4e4; 
+            border-radius: 0.25rem; 
+            font: 400 1rem var(--body-font); 
+            color: var(--text-color);
+        }
+
+        .button {
+            width: 100%;
+            justify-content: center;
+        }
+
+        #message-area {
+            color: hsl(0, 70%, 50%);
+            text-align: center;
+            min-height: 1.2em;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <form id="login-form" class="login-card">
+            
+            <header>
+                <h2 class="title title-format" style="margin-bottom: 0;">Acessar</h2>
+            </header>
+            
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="user" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <p id="message-area"></p>
+
+            <button type="submit" class="button">Entrar</button>
+
+        </form>
+
+    </main>
+
+    <script>
+        //Garantir que o script rode após o HTML ser carregado
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('login-form');
+            //Adicionar o listener no evento 'submit' do formulário
+            loginForm.addEventListener('submit', performLogin);
+        });
+
+        async function performLogin(event) {
+            //Previnir o recarregamento padrão da página
+            event.preventDefault();
+
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const messageArea = document.getElementById('message-area');
+
+            //Coletar os dados dos campos
+            const user = usernameInput.value;
+            const password = passwordInput.value;
+
+            //Limpar mensagens anteriores
+            messageArea.textContent = '';
+
+            try {
+                //Requisitar POST para o endpoint /login (do authentication.js)
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    //Enviar o corpo JSON conforme esperado pelo backend
+                    body: JSON.stringify({
+                        user: user,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                //Analisar a resposta
+                if (response.status === 200 && data.auth === true) {
+                    // SUCESSO (HTTP 200)
+                    //Armazenar o token no localStorage
+                    localStorage.setItem('authToken', data.token);
+                    
+                    //Exibir mensagem de sucesso (usando a cor base do CSS)
+                    messageArea.textContent = 'Login bem-sucedido! Aguarde...';
+                    messageArea.style.color = 'var(--base-color)';
+                    
+                    //Redirecionar para a página principal após um breve atraso
+
+                } else {
+                    //Exibir a mensagem de erro vinda da API
+                    messageArea.style.color = 'hsl(0, 70%, 50%)';
+                    if (data.message) {
+                        messageArea.textContent = data.message;
+                    } else {
+                        messageArea.textContent = 'Erro desconhecido ao tentar fazer login.';
+                    }
+                }
+
+            } catch (error) {
+                //Capturar erros de rede (ex: servidor offline)
+                console.error('Erro na requisição de login:', error);
+                messageArea.style.color = 'hsl(0, 70%, 50%)';
+                messageArea.textContent = 'Não foi possível conectar ao servidor. Tente novamente.';
+            }
+        }
+    </script>
+
+</body>
+</html>

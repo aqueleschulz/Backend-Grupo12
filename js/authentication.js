@@ -21,7 +21,7 @@ app.use(cookieParser());
 
 app.get('/clientes', verifyJWT, (req, res) => {
     console.log("Retornou todos clientes!");
-    res.json([id:1,nome:'adm']);
+    res.json([{ id: 1, nome: 'adm' }]);
 })
 
 function verifyJWT(req, res, next){
@@ -53,8 +53,10 @@ app.post('/login', (req, res) => {
         });
         return res.status(200).json({auth: true, token: token});
     }
-    // Adicione um else para lidar com credenciais inválidas, se desejar
-    return res.status(401).json({ auth: false, message: 'Usuário ou senha inválidos.' });
+    // Adicionar um else para lidar com credenciais inválidas
+    else {
+        return res.status(401).json({ auth: false, message: 'Usuário ou senha inválidos.' });
+    }
 });
 
 app.post('/logout', (req, res) => {
