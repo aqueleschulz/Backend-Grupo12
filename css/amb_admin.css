@@ -1,0 +1,146 @@
+/* ******** RESET ******** */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+ul {
+    list-style: none;
+}
+
+a {
+    text-decoration: none;
+}
+
+img {
+    width: 100%;
+    height: auto;
+}
+
+:root {
+    /* var */
+    --header-height: 4.5rem;
+
+    /*colors*/
+    --hue: 210; /* foi criado uma variável com hue que torna mais fácil trocar as cores do site*/
+    /* HSL Color Mode */
+    --base-color: hsl(var(--hue) 80% 35%);
+    --base-color-second: hsl(var(--hue) 80% 35%);
+    --base-color-alt: hsl(var(--hue) 57% 53%);
+    --title-color: hsl(var(--hue) 41% 10%);
+    --text-color: hsl(0 0% 46%);
+    --text-color-light: hsl(0 0% 98%);
+    --body-color: hsl(0 0% 98%);
+    /* FONTS */
+    --title-font-size: 1.875rem;
+    --subtitle-font-size: 1.5rem;
+
+    --title-font: 'Poppins', sans-serif;
+    --body-font: 'DM Sans', sans-serif;
+}
+
+body {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    width: 100%; 
+}
+
+.menu {
+    border-bottom: 1px solid #e4e4e4;
+    margin-bottom: 2rem;
+    display: flex;
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    background-color: var(--body-color);
+    width: 100%;
+}
+
+.logo {
+    font: 700 1.3125rem var(--title-font);
+    color: var(--title-color);
+}
+
+.logo span {
+    color: var(--base-color);
+}
+
+.logo-alt span {
+    color: var(--body-color);
+}
+
+/* ******** Signature ******** */
+nav {
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.title {
+    font: 700 var(--title-font-size) var(--title-font);
+    color: var(--title-color);
+    -webkit-font-smoothing: auto;
+}
+
+.container {
+    margin-left: 1.5rem;
+    margin-right: 1.5rem;
+}
+
+.box-content {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+.box-content .action-menu {
+    width: 14rem; /* tamanho fixo do menu */
+    padding: 1.25rem;
+    box-sizing: border-box;
+    position: fixed; /* fica grudado no lado esquerdo */
+    top: 0;
+    left: 0;
+    height: 100vh; /* altura total da janela */
+}
+
+.box-content .action-menu .title-menu {
+    font: 700 var(--title-font-size) var(--title-font);
+    color: var(--title-color);
+    -webkit-font-smoothing: auto;
+    margin-top: var(--header-height);
+    margin-bottom: 2rem;
+}
+
+.box-content .action-menu .grid ul {
+    list-style: none;
+    padding: 0;
+}
+
+.box-content .action-menu .grid li {
+    margin: 2rem 0;
+}
+
+.box-content .action-menu .grid a {
+    font: 700 1rem var(--title-font);
+    color: var(--base-color);
+    -webkit-font-smoothing: auto;
+    transition: color 0.2s;
+}
+
+.box-content .action-menu .grid a:hover {
+    color: var(--base-color-alt);
+}
+
+.content {
+    flex: 1;
+    margin-left: 14rem; /* empurra o conteúdo para a direita, respeitando a largura do menu */
+    padding: 1.25rem;
+    background-color: var(--base-color-second);
+    box-sizing: border-box;
+}
