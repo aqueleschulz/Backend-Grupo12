@@ -12,6 +12,48 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
 
     <style>
+        /* ******** RESET ******** */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        img {
+            width: 100%;
+            height: auto;
+        }
+        
+        :root {
+            /* var */
+            --header-height: 4.5rem;
+
+            /*colors*/
+            --hue: 210; /* foi criado uma variável com hue que torna mais fácil trocar as cores do site*/
+            /* HSL Color Mode */
+            --base-color: hsl(var(--hue) 80% 35%);
+            --base-color-second: hsl(var(--hue) 80% 35%);
+            --base-color-alt: hsl(var(--hue) 57% 53%);
+            --title-color: hsl(var(--hue) 41% 10%);
+            --text-color: hsl(0 0% 46%);
+            --text-color-light: hsl(0 0% 98%);
+            --body-color: hsl(0 0% 98%);
+            /* FONTS */
+            --title-font-size: 1.875rem;
+            --subtitle-font-size: 1.5rem;
+
+            --title-font: 'Poppins', sans-serif;
+            --body-font: 'DM Sans', sans-serif;
+        }
+        
         body {
             display: grid;
             place-items: center;
@@ -19,9 +61,44 @@
             width: 100%; 
         }
 
+        .menu {
+            border-bottom: 1px solid #e4e4e4;
+            margin-bottom: 2rem;
+            display: flex;
+
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            background-color: var(--body-color);
+            width: 100%;
+        }
+
+        .logo {
+            font: 700 1.3125rem var(--title-font);
+            color: var(--title-color);
+        }
+
+        .logo span {
+            color: var(--base-color);
+        }
+
+        .logo-alt span {
+            color: var(--body-color);
+        }
+
+        /* ******** Signature ******** */
+        nav {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
         /* Um contêiner customizado para o card de login */
         .login-card {
-            max-width: 420px;
+            max-width: 28rem;
             width: 100%;
             background: white;
             padding: 3rem 2.5rem; 
@@ -29,6 +106,20 @@
             box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.08);
             display: grid;
             gap: 1.5rem;
+            margin-top: 10rem;
+            margin-bottom: 6rem;
+        }
+
+        .title {
+            font: 700 var(--title-font-size) var(--title-font);
+            color: var(--title-color);
+            -webkit-font-smoothing: auto;
+        }
+
+        .container {
+            margin-left: 1.5rem;
+            margin-right: 1.5rem;
+
         }
 
         .form-group {
@@ -42,6 +133,10 @@
         }
 
         .form-group input {
+            margin: auto;
+        }
+
+        .form-group input {
             width: 100%;
             padding: 1rem;
             border: 1px solid #e4e4e4; 
@@ -51,8 +146,20 @@
         }
 
         .button {
-            width: 100%;
-            justify-content: center;
+            background-color: hsl(210 80% 35%);
+            color: hsl(0 0% 98%);
+            height: 3.5rem;
+            display: inline-flex;
+            align-items: center;
+            padding: 0 2rem;
+            font: 500 1rem 'DM Sans', sans-serif;
+            transition: background 0.3s;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .button:hover {
+            background: hsl(210 57% 53%);
         }
 
         #message-area {
@@ -62,11 +169,60 @@
             font-size: 0.9rem;
             font-weight: 500;
         }
+
+        .section {
+            padding: calc(1rem + var(--header-height)) 0;
+        }
+
+        footer {
+            background: var(--base-color);
+            width: 100%;
+            height: 100%;
+        }
+
+        footer .section {
+            padding: 4rem 0;
+        }
+
+        footer .container {
+            text-align: left;
+        }
+
+        footer .grid {
+            display: grid;
+            gap: 1rem;
+            max-width: 70%;
+            max-height: 25rem;
+        }
+
+        footer .logo {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        footer .brand p {
+            color: var(--text-color-light);
+            margin-bottom: 0.75rem;
+        }
+
+        footer .social {
+            display: flex;
+            gap: 2rem;
+        }
+
+        footer i {
+            font-size: 1.5rem;
+            color: var(--text-color-light);
+        }
     </style>
 </head>
 
 <body>
-
+    <div class="menu">
+        <nav class="container">
+            <a class="logo" href="/index.html">is<span>Universidade</span>.</a>
+        </nav>
+    </div>
     <main class="container">
 
         <form id="login-form" class="login-card">
@@ -74,17 +230,17 @@
             <header>
                 <h2 class="title title-format" style="margin-bottom: 0;">Acessar</h2>
             </header>
-            
-            <div class="form-group">
-                <label for="username">Usuário</label>
-                <input type="text" id="username" name="user" required>
-            </div>
+            <div class="container">
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" name="user" required>
+                </div>
 
-            <div class="form-group">
-                <label for="password">Senha</label>
-                <input type="password" id="password" name="password" required>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
             </div>
-            
             <p id="message-area"></p>
 
             <button type="submit" class="button">Entrar</button>
@@ -92,7 +248,15 @@
         </form>
 
     </main>
-
+    <footer class="section">
+      <div class="container grid">
+        <div class="brand">
+          <a class="logo logo-alt" href="/index.html">is<span>Universidade</span>.</a>
+          <p>©2025 Unisinos</p>
+          <p>Todos os direitos reservados.</p>
+        </div>
+      </div>
+    </footer>
     <script>
         //Garantir que o script rode após o HTML ser carregado
         document.addEventListener('DOMContentLoaded', () => {
