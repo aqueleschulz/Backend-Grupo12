@@ -1,7 +1,23 @@
 export const ERROR_CATALOG = {
   TURMA_INEXISTENTE: {
-    statusCode: 400,
+    statusCode: 404,
     message: 'Turma não encontrada.',
+  },
+  TURMA_CODIGO_DUPLICADO: {
+    statusCode: 409,
+    message: 'Já existe uma turma com este código.',
+  },
+  DISCIPLINA_INEXISTENTE: {
+    statusCode: 404,
+    message: 'Disciplina não encontrada.',
+  },
+  PROFESSOR_INEXISTENTE: {
+    statusCode: 404,
+    message: 'Professor não encontrado.',
+  },
+  TURMA_COM_MATRICULAS: {
+    statusCode: 409,
+    message: 'Não é possível excluir turma com matrículas ativas.',
   },
   JA_MATRICULADO_NA_TURMA: {
     statusCode: 409,
