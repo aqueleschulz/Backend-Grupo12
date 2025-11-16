@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Painel Admin — Completo</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      body {
+        display: flex;
+        min-height: 100vh;
+        background: #f4f6f9;
+      }
+      #sidebar {
+        width: 260px;
+        background: #0d47a1;
+        color: #fff;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      #sidebar h2 {
+        font-size: 20px;
+      }
+      #sidebar button {
+        background: rgba(255, 255, 255, 0.12);
+        border: none;
+        color: #fff;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      #sidebar button.active {
+        background: #1976d2;
+      }
+      #main {
+        flex: 1;
+        padding: 24px;
+        overflow: auto;
+      }
+      h1 {
+        color: #0d47a1;
+        margin-bottom: 16px;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        margin-bottom: 18px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+      .stat {
+        padding: 12px;
+        border-radius: 8px;
+        background: #fff;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 8px;
+      }
+      input,
+      select,
+      button {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+      button.action {
+        background: #0d47a1;
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+      table th {
+        background: #0d47a1;
+        color: #fff;
+        padding: 10px;
+        text-align: left;
+      }
+      th,
+      td {
+        border: 1px solid #e6e6e6;
+        padding: 8px;
+      }
+      .small {
+        font-size: 13px;
+        color: #666;
+      }
+      .muted {
+        color: #666;
+        margin-top: 8px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal .box {
+        background: #fff;
+        padding: 18px;
+        border-radius: 12px;
+        min-width: 320px;
+        max-width: 720px;
+      }
+      .pagination {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 12px;
+      }
+      @media (max-width: 800px) {
+        #sidebar {
+          width: 100%;
+          flex-direction: row;
+          overflow-x: auto;
+        }
+        body {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sidebar">
+      <h2>Admin</h2>
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="usuarios">Alunos & Professores</button>
+      <button data-view="disciplinas">Disciplinas</button>
+      <button data-view="turmas">Turmas</button>
+      <button data-view="matriculas">Matrículas</button>
+      <hr
+        style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.08)"
+      />
+      <button id="logoutBtn">Sair</button>
+    </div>
+
+    <div id="main">
+      <!-- DASHBOARD -->
+      <div id="view-dashboard" class="view">
+        <h1>Dashboard</h1>
+        <div class="card grid" id="dashboardCards">
+          <div class="stat card">
+            <h3 id="countAlunos">0</h3>
+            <div class="small">Total de alunos</div>
+          </div>
+          <div class="stat card">
+            <h3 id="countProf">0</h3>
+            <div class="small">Total de professores</div>
+          </div>
+          <div class="stat card">
+            <h3 id="countDisc">0</h3>
+            <div class="small">Total de disciplinas</div>
+          </div>
+          <div class="stat card">
+            <h3 id="countTurmas">0</h3>
+            <div class="small">Total de turmas</div>
+          </div>
+          <div class="stat card">
+            <h3 id="countMat">0</h3>
+            <div class="small">Total de matrículas</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USUÁRIOS -->
+      <div id="view-usuarios" class="view" style="display: none">
+        <h1>Usuários</h1>
+        <div class="card">
+          <div class="row">
+            <div style="flex: 1">
+              <input id="searchUser" placeholder="Buscar por nome ou email" />
+            </div>
+            <div>
+              <select id="filterRole">
+                <option value="">Todos</option>
+                <option value="ALUNO">ALUNO</option>
+                <option value="PROFESSOR">PROFESSOR</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+            <div>
+              <button class="action" id="btnNewUser">Novo usuário</button>
+            </div>
+          </div>
+
+          <table id="tableUsers">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Roles</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <div class="pagination" id="usersPagination"></div>
+        </div>
+      </div>
+
+      <!-- DISCIPLINAS -->
+      <div id="view-disciplinas" class="view" style="display: none">
+        <h1>Disciplinas</h1>
+        <div class="card">
+          <div class="row">
+            <input
+              id="nomeDiscNew"
+              placeholder="Nome da disciplina"
+              style="flex: 1"
+            />
+            <button class="action" id="btnCreateDisc">Criar</button>
+          </div>
+
+          <table id="tableDisciplinas">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nome</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="pagination" id="discsPagination"></div>
+        </div>
+      </div>
+
+      <!-- TURMAS -->
+      <div id="view-turmas" class="view" style="display: none">
+        <h1>Turmas</h1>
+        <div class="card">
+          <h4>Criar turma</h4>
+          <div class="row">
+            <input id="turmaCodigo" placeholder="Código" style="flex: 1" />
+            <input id="turmaVagas" placeholder="Vagas" style="width: 100px" />
+            <input id="turmaDia" placeholder="Dia" style="width: 140px" />
+          </div>
+          <div class="row" style="margin-top: 8px">
+            <select id="selDiscForTurma" style="flex: 1"></select>
+            <select id="selProfForTurma" style="width: 260px"></select>
+          </div>
+          <div style="margin-top: 8px">
+            <button class="action" id="btnCreateTurma">Criar Turma</button>
+          </div>
+
+          <table id="tableTurmas">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Disciplina</th>
+                <th>Professor</th>
+                <th>Vagas</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="pagination" id="turmasPagination"></div>
+        </div>
+      </div>
+
+      <!-- MATRICULAS -->
+      <div id="view-matriculas" class="view" style="display: none">
+        <h1>Matrículas</h1>
+        <div class="card">
+          <div class="row">
+            <input
+              id="searchMat"
+              placeholder="Buscar por aluno ou turma"
+              style="flex: 1"
+            />
+            <button class="action" id="btnRefreshMats">Atualizar</button>
+          </div>
+
+          <table id="tableMat">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Aluno</th>
+                <th>Turma</th>
+                <th>Data</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="pagination" id="matsPagination"></div>
+        </div>
+
+        <div class="card" style="margin-top: 12px">
+          <h4>Criar matrícula (admin)</h4>
+          <div class="row">
+            <select id="selAlunoForMat" style="flex: 1"></select>
+            <select id="selTurmaForMat" style="width: 260px"></select>
+          </div>
+          <div style="margin-top: 8px">
+            <button class="action" id="btnCreateMat">Criar Matrícula</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL (reutilizável para criar/editar usuário) -->
+    <div id="modal" class="modal">
+      <div class="box">
+        <h3 id="modalTitle">Criar usuário</h3>
+        <div style="margin-top: 10px">
+          <input id="modalNome" placeholder="Nome" />
+          <input id="modalEmail" placeholder="Email" style="margin-top: 8px" />
+          <input
+            id="modalSenha"
+            placeholder="Senha (mín. 6)"
+            style="margin-top: 8px"
+          />
+          <select id="modalRoles" style="margin-top: 8px">
+            <option value="ALUNO">ALUNO</option>
+            <option value="PROFESSOR">PROFESSOR</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+          <div
+            style="
+              margin-top: 12px;
+              display: flex;
+              gap: 8px;
+              justify-content: flex-end;
+            "
+          >
+            <button id="modalClose">Cancelar</button>
+            <button class="action" id="modalSave">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* --- Config --- */
+      const API = "http://localhost:3000/api";
+      const token = localStorage.getItem("token");
+      if (!token) window.location.href = "authentication.html";
+      const headersAuth = () => ({
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      });
+
+      /* --- Util: tentativa de paginação server-side, fallback client-side --- */
+      async function fetchWithPagination(path, page = 1, limit = 10) {
+        // tenta /resource?page=..&limit=..
+        const tryUrl = `${API}${path}?page=${page}&limit=${limit}`;
+        try {
+          const res = await fetch(tryUrl, { headers: headersAuth() });
+          if (res.ok) return await res.json();
+          // se não OK, tenta sem paginação
+          const res2 = await fetch(`${API}${path}`, { headers: headersAuth() });
+          if (!res2.ok) throw new Error("Erro ao buscar " + path);
+          const all = await res2.json();
+          // page/calc
+          const start = (page - 1) * limit;
+          return {
+            items: all.slice(start, start + limit),
+            total: all.length,
+            page,
+            limit,
+          };
+        } catch (e) {
+          console.error(e);
+          throw e;
+        }
+      }
+
+      /* --- UI: trocar views --- */
+      document.querySelectorAll("#sidebar button[data-view]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll("#sidebar button")
+            .forEach((x) => x.classList.remove("active"));
+          btn.classList.add("active");
+          const view = btn.getAttribute("data-view");
+          document
+            .querySelectorAll(".view")
+            .forEach((v) => (v.style.display = "none"));
+          document.getElementById("view-" + view).style.display = "block";
+          // carregar dados ao mudar de view
+          if (view === "usuarios") loadUsers(1);
+          if (view === "disciplinas") loadDisciplinas(1);
+          if (view === "turmas") loadTurmas(1);
+          if (view === "matriculas") loadMatrículas(1);
+        });
+      });
+
+      /* LOGOUT */
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        window.location.href = "authentication.html";
+      });
+
+      /* --- DASHBOARD (contadores) --- */
+      async function loadDashboard() {
+        try {
+          const usuarios = await (
+            await fetch(`${API}/usuarios`, { headers: headersAuth() })
+          ).json();
+          const alunos = usuarios.filter(
+            (u) => u.roles && u.roles.includes("ALUNO")
+          );
+          const profs = usuarios.filter(
+            (u) => u.roles && u.roles.includes("PROFESSOR")
+          );
+          document.getElementById("countAlunos").textContent = alunos.length;
+          document.getElementById("countProf").textContent = profs.length;
+          const discs = await (
+            await fetch(`${API}/disciplinas`, { headers: headersAuth() })
+          ).json();
+          document.getElementById("countDisc").textContent = discs.length;
+          const turmas = await (
+            await fetch(`${API}/turmas`, { headers: headersAuth() })
+          ).json();
+          document.getElementById("countTurmas").textContent = turmas.length;
+          const mats = await (
+            await fetch(`${API}/admin/matriculas`, { headers: headersAuth() })
+          ).json();
+          document.getElementById("countMat").textContent = mats.length;
+        } catch (e) {
+          console.error("Erro dashboard", e);
+        }
+      }
+      loadDashboard();
+
+      /* --- USUÁRIOS (CRUD) --- */
+      let usersPage = 1,
+        usersLimit = 10;
+      async function loadUsers(page = 1) {
+        usersPage = page;
+        try {
+          // tenta server-side
+          const res = await fetch(
+            `${API}/usuarios?page=${page}&limit=${usersLimit}`,
+            { headers: headersAuth() }
+          );
+          let items, total;
+          if (res.ok) {
+            const json = await res.json();
+            // possibilidade resposta { items: [...], total: N }
+            if (Array.isArray(json)) {
+              items = json;
+              total = json.length;
+            } else {
+              items = json.items || json;
+              total = json.total || items.length;
+            }
+          } else {
+            // fallback: buscar tudo e paginar client-side
+            const all = await (
+              await fetch(`${API}/usuarios`, { headers: headersAuth() })
+            ).json();
+            total = all.length;
+            items = all.slice((page - 1) * usersLimit, page * usersLimit);
+          }
+          renderUsers(items);
+          renderPagination(
+            "usersPagination",
+            total,
+            page,
+            usersLimit,
+            loadUsers
+          );
+        } catch (e) {
+          console.error(e);
+          alert("Erro carregando usuários");
+        }
+      }
+
+      function renderUsers(list) {
+        const tbody = document.querySelector("#tableUsers tbody");
+        tbody.innerHTML = "";
+        list.forEach((u) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${u.id}</td><td>${u.nome}</td><td>${
+            u.email
+          }</td><td>${(u.roles || []).join(", ")}</td>
+      <td>
+        <button onclick="editUser('${u.id}')">Editar</button>
+        <button onclick="deleteUser('${u.id}')">Excluir</button>
+      </td>`;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document
+        .getElementById("btnNewUser")
+        .addEventListener("click", () => openModal("create"));
+
+      /* Modal create/edit */
+      const modal = document.getElementById("modal");
+      document
+        .getElementById("modalClose")
+        .addEventListener("click", () => (modal.style.display = "none"));
+
+      let modalMode = "create",
+        modalEditId = null;
+      function openModal(mode, user = {}) {
+        modalMode = mode;
+        modalEditId = user.id || null;
+        document.getElementById("modalTitle").textContent =
+          mode === "create" ? "Criar usuário" : "Editar usuário";
+        document.getElementById("modalNome").value = user.nome || "";
+        document.getElementById("modalEmail").value = user.email || "";
+        document.getElementById("modalSenha").value = "";
+        document.getElementById("modalRoles").value =
+          (user.roles && user.roles[0]) || "ALUNO";
+        modal.style.display = "flex";
+      }
+
+      document
+        .getElementById("modalSave")
+        .addEventListener("click", async () => {
+          const nome = document.getElementById("modalNome").value.trim();
+          const email = document.getElementById("modalEmail").value.trim();
+          const senha = document.getElementById("modalSenha").value.trim();
+          const role = document.getElementById("modalRoles").value;
+          if (!nome || !email) {
+            alert("Nome e email obrigatórios");
+            return;
+          }
+          try {
+            if (modalMode === "create") {
+              // POST /api/usuarios
+              const res = await fetch(`${API}/usuarios`, {
+                method: "POST",
+                headers: headersAuth(),
+                body: JSON.stringify({ nome, email, senha, roles: [role] }),
+              });
+              if (!res.ok) throw new Error("Erro criando usuário");
+              alert("Usuário criado");
+            } else {
+              // PUT /api/usuarios/:id
+              const res = await fetch(`${API}/usuarios/${modalEditId}`, {
+                method: "PUT",
+                headers: headersAuth(),
+                body: JSON.stringify({
+                  nome,
+                  email,
+                  ...(senha ? { senha } : {}),
+                  roles: [role],
+                }),
+              });
+              if (!res.ok) throw new Error("Erro atualizando");
+              alert("Usuário atualizado");
+            }
+            modal.style.display = "none";
+            loadUsers(usersPage);
+            loadDashboard();
+          } catch (e) {
+            console.error(e);
+            alert(e.message);
+          }
+        });
+
+      /* delete user */
+      async function deleteUser(id) {
+        if (!confirm("Excluir usuário?")) return;
+        const res = await fetch(`${API}/usuarios/${id}`, {
+          method: "DELETE",
+          headers: headersAuth(),
+        });
+        if (res.ok) {
+          alert("Excluído");
+          loadUsers(usersPage);
+          loadDashboard();
+        } else alert("Erro ao excluir");
+      }
+      window.editUser = async (id) => {
+        // obter dados do usuário
+        const u = await (
+          await fetch(`${API}/usuarios/${id}`, { headers: headersAuth() })
+        ).json();
+        openModal("edit", u);
+      };
+
+      /* --- DISCIPLINAS (CRUD) --- */
+      let discsPage = 1,
+        discsLimit = 10;
+      async function loadDisciplinas(page = 1) {
+        discsPage = page;
+        try {
+          const res = await fetch(
+            `${API}/disciplinas?page=${page}&limit=${discsLimit}`,
+            { headers: headersAuth() }
+          );
+          let items, total;
+          if (res.ok) {
+            const json = await res.json();
+            items = json.items || json;
+            total = json.total || items.length;
+          } else {
+            const all = await (
+              await fetch(`${API}/disciplinas`, { headers: headersAuth() })
+            ).json();
+            total = all.length;
+            items = all.slice((page - 1) * discsLimit, page * discsLimit);
+          }
+          renderDiscs(items);
+          renderPagination(
+            "discsPagination",
+            total,
+            page,
+            discsLimit,
+            loadDisciplinas
+          );
+        } catch (e) {
+          console.error(e);
+          alert("Erro disciplinas");
+        }
+      }
+
+      function renderDiscs(list) {
+        const tbody = document.querySelector("#tableDisciplinas tbody");
+        tbody.innerHTML = "";
+        list.forEach((d) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${d.id}</td><td>${d.codigo || ""}</td><td>${
+            d.nome
+          }</td>
+    <td><button onclick="deleteDisc('${d.id}')">Excluir</button></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+      document
+        .getElementById("btnCreateDisc")
+        .addEventListener("click", async () => {
+          const nome = document.getElementById("nomeDiscNew").value.trim();
+          if (!nome) return alert("Nome obrigatório");
+          try {
+            const body = { nome };
+            // cria com código gerado pelo backend (ou se precisar, geramos aqui)
+            const res = await fetch(`${API}/disciplinas`, {
+              method: "POST",
+              headers: headersAuth(),
+              body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error("Erro criar disciplina");
+            alert("Criada");
+            document.getElementById("nomeDiscNew").value = "";
+            loadDisciplinas(discsPage);
+            loadDashboard();
+          } catch (e) {
+            console.error(e);
+            alert(e.message);
+          }
+        });
+
+      async function deleteDisc(id) {
+        if (!confirm("Excluir disciplina?")) return;
+        const res = await fetch(`${API}/disciplinas/${id}`, {
+          method: "DELETE",
+          headers: headersAuth(),
+        });
+        if (res.ok) {
+          alert("Removida");
+          loadDisciplinas(discsPage);
+          loadDashboard();
+        } else alert("Erro");
+      }
+
+      /* --- TURMAS (CRUD) --- */
+      let turmasPage = 1,
+        turmasLimit = 10;
+      async function loadTurmas(page = 1) {
+        turmasPage = page;
+        try {
+          // popular selects de disciplinas e professores
+          const [discs, profs] = await Promise.all([
+            (
+              await fetch(`${API}/disciplinas`, { headers: headersAuth() })
+            ).json(),
+            (
+              await fetch(`${API}/usuarios?role=PROFESSOR`, {
+                headers: headersAuth(),
+              })
+            ).json(),
+          ]);
+          const selD = document.getElementById("selDiscForTurma");
+          const selP = document.getElementById("selProfForTurma");
+          selD.innerHTML = '<option value="">Selecione disciplina</option>';
+          discs.forEach(
+            (d) =>
+              (selD.innerHTML += `<option value="${d.id}">${d.nome}</option>`)
+          );
+          selP.innerHTML = '<option value="">Selecione professor</option>';
+          profs.forEach(
+            (p) =>
+              (selP.innerHTML += `<option value="${p.id}">${p.nome}</option>`)
+          );
+
+          // tentar paginação
+          const res = await fetch(
+            `${API}/turmas?page=${page}&limit=${turmasLimit}`,
+            { headers: headersAuth() }
+          );
+          let items, total;
+          if (res.ok) {
+            const json = await res.json();
+            items = json.items || json;
+            total = json.total || items.length;
+          } else {
+            const all = await (
+              await fetch(`${API}/turmas`, { headers: headersAuth() })
+            ).json();
+            total = all.length;
+            items = all.slice((page - 1) * turmasLimit, page * turmasLimit);
+          }
+          // render
+          const tbody = document.querySelector("#tableTurmas tbody");
+          tbody.innerHTML = "";
+          items.forEach((t) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${t.id}</td><td>${t.codigo || ""}</td><td>${
+              t.disciplinaNome || t.disciplina || ""
+            }</td><td>${t.professorNome || t.professor || ""}</td><td>${
+              t.vagas || ""
+            }</td>
+        <td><button onclick="deleteTurma('${t.id}')">Excluir</button></td>`;
+            tbody.appendChild(tr);
+          });
+          renderPagination(
+            "turmasPagination",
+            total,
+            page,
+            turmasLimit,
+            loadTurmas
+          );
+        } catch (e) {
+          console.error(e);
+          alert("Erro turmas");
+        }
+      }
+
+      document
+        .getElementById("btnCreateTurma")
+        .addEventListener("click", async () => {
+          try {
+            const codigo =
+              document.getElementById("turmaCodigo").value ||
+              "T" + Math.random().toString(36).slice(2, 8).toUpperCase();
+            const vagas =
+              Number(document.getElementById("turmaVagas").value) || 0;
+            const dia = document.getElementById("turmaDia").value || "";
+            const disciplinaId =
+              document.getElementById("selDiscForTurma").value;
+            const professorId =
+              document.getElementById("selProfForTurma").value;
+            if (!disciplinaId || !professorId)
+              return alert("Escolha disciplina e professor");
+            const body = {
+              codigo,
+              vagas,
+              dia,
+              turno: "TBD",
+              disciplinaId,
+              professorId,
+            };
+            const res = await fetch(`${API}/turmas`, {
+              method: "POST",
+              headers: headersAuth(),
+              body: JSON.stringify(body),
+            });
+            if (!res.ok) throw new Error("Erro criar turma");
+            alert("Turma criada");
+            document.getElementById("turmaCodigo").value = "";
+            document.getElementById("turmaVagas").value = "";
+            document.getElementById("turmaDia").value = "";
+            loadTurmas(turmasPage);
+            loadDashboard();
+          } catch (e) {
+            console.error(e);
+            alert(e.message);
+          }
+        });
+
+      async function deleteTurma(id) {
+        if (!confirm("Excluir turma?")) return;
+        const res = await fetch(`${API}/turmas/${id}`, {
+          method: "DELETE",
+          headers: headersAuth(),
+        });
+        if (res.ok) {
+          alert("Turma removida");
+          loadTurmas(turmasPage);
+          loadDashboard();
+        } else alert("Erro");
+      }
+
+      /* --- MATRICULAS (admin) --- */
+      let matsPage = 1,
+        matsLimit = 10;
+      async function loadMatrículas(page = 1) {
+        matsPage = page;
+        try {
+          // preencher selects de criação
+          const [alunos, turmas] = await Promise.all([
+            (
+              await fetch(`${API}/usuarios?role=ALUNO`, {
+                headers: headersAuth(),
+              })
+            ).json(),
+            (await fetch(`${API}/turmas`, { headers: headersAuth() })).json(),
+          ]);
+          const selA = document.getElementById("selAlunoForMat");
+          const selT = document.getElementById("selTurmaForMat");
+          selA.innerHTML = "";
+          alunos.forEach(
+            (a) =>
+              (selA.innerHTML += `<option value="${a.id}">${a.nome} (${a.email})</option>`)
+          );
+          selT.innerHTML = "";
+          turmas.forEach(
+            (t) =>
+              (selT.innerHTML += `<option value="${t.id}">${
+                t.nome || t.codigo
+              }</option>`)
+          );
+
+          // listar matrículas admin
+          const res = await fetch(
+            `${API}/admin/matriculas?page=${page}&limit=${matsLimit}`,
+            { headers: headersAuth() }
+          );
+          let items, total;
+          if (res.ok) {
+            const json = await res.json();
+            items = json.items || json;
+            total = json.total || items.length;
+          } else {
+            const all = await (
+              await fetch(`${API}/admin/matriculas`, { headers: headersAuth() })
+            ).json();
+            items = all.slice((page - 1) * matsLimit, page * matsLimit);
+            total = all.length;
+          }
+          const tbody = document.querySelector("#tableMat tbody");
+          tbody.innerHTML = "";
+          items.forEach((m) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${m.id}</td><td>${
+              m.alunoNome || m.aluno || m.aluno_id
+            }</td><td>${m.turmaNome || m.turma || m.turma_id}</td><td>${
+              m.created_at || m.data || ""
+            }</td>
+        <td><button onclick="deleteMat('${m.id}')">Cancelar</button></td>`;
+            tbody.appendChild(tr);
+          });
+          renderPagination(
+            "matsPagination",
+            total,
+            page,
+            matsLimit,
+            loadMatrículas
+          );
+        } catch (e) {
+          console.error(e);
+          alert("Erro matrículas");
+        }
+      }
+
+      document
+        .getElementById("btnCreateMat")
+        .addEventListener("click", async () => {
+          try {
+            const alunoId = document.getElementById("selAlunoForMat").value;
+            const turmaId = document.getElementById("selTurmaForMat").value;
+            if (!alunoId || !turmaId) return alert("Escolha aluno e turma");
+            // chama endpoint admin (precisa existir): POST /api/admin/matriculas
+            const res = await fetch(`${API}/admin/matriculas`, {
+              method: "POST",
+              headers: headersAuth(),
+              body: JSON.stringify({ alunoId, turmaId }),
+            });
+            if (!res.ok) throw new Error("Erro criando matrícula");
+            alert("Matrícula criada");
+            loadMatrículas(matsPage);
+            loadDashboard();
+          } catch (e) {
+            console.error(e);
+            alert(e.message);
+          }
+        });
+
+      async function deleteMat(id) {
+        if (!confirm("Cancelar matrícula?")) return;
+        // admin delete: DELETE /api/admin/matriculas/:id
+        const res = await fetch(`${API}/admin/matriculas/${id}`, {
+          method: "DELETE",
+          headers: headersAuth(),
+        });
+        if (res.ok) {
+          alert("Cancelada");
+          loadMatrículas(matsPage);
+          loadDashboard();
+        } else alert("Erro");
+      }
+
+      /* --- RENDER PAGINATION (simples) --- */
+      function renderPagination(containerId, total, page, limit, onPage) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        const pages = Math.max(1, Math.ceil(total / limit));
+        const prev = document.createElement("button");
+        prev.textContent = "←";
+        prev.disabled = page <= 1;
+        prev.onclick = () => onPage(page - 1);
+        const next = document.createElement("button");
+        next.textContent = "→";
+        next.disabled = page >= pages;
+        next.onclick = () => onPage(page + 1);
+        container.appendChild(prev);
+        container.appendChild(
+          document.createTextNode(
+            ` Página ${page} de ${pages} (` + total + " itens) "
+          )
+        );
+        container.appendChild(next);
+      }
+
+      /* --- Inicializações --- */
+      loadDashboard();
+      // carregará as views on demand
+    </script>
+  </body>
+</html>

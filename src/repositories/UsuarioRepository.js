@@ -1,4 +1,3 @@
-// Importar a pool de conexões com o banco de dados
 import pool from '../db/pool.js';
 
 const executor = (client) => client ?? pool;
@@ -30,6 +29,29 @@ async function findByEmail(email, { client } = {}) {
   return result.rows[0] ?? null;
 }
 
+async function findAll() {
+  const query = `
+    SELECT id, nome, email, roles
+    FROM usuario
+    ORDER BY nome ASC
+  `;
+  const result = await db.query(query);
+  return result.rows;
+}
+
+async function findByRole(role) {
+  const query = `
+    SELECT id, nome, email, roles
+    FROM usuario
+    WHERE $1 = ANY(roles)
+    ORDER BY nome ASC
+  `;
+  const result = await db.query(query, [role]);
+  return result.rows;
+}
+
 export const UsuarioRepository = {
   findByEmail,
+  findAll,
+  findByRole
 };

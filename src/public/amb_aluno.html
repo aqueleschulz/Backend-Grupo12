@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Painel Aluno</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial;
+      }
+      body {
+        display: flex;
+        min-height: 100vh;
+        background: #f4f6f9;
+      }
+      #sidebar {
+        width: 220px;
+        background: #0d47a1;
+        color: #fff;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      #sidebar button {
+        background: rgba(255, 255, 255, 0.12);
+        border: none;
+        color: #fff;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      #main {
+        flex: 1;
+        padding: 20px;
+      }
+      h1 {
+        color: #0d47a1;
+        margin-bottom: 12px;
+      }
+      .card {
+        background: #fff;
+        padding: 12px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th {
+        background: #0d47a1;
+        color: #fff;
+        padding: 8px;
+        text-align: left;
+      }
+      td,
+      th {
+        border: 1px solid #e6e6e6;
+        padding: 8px;
+      }
+      input,
+      select,
+      button {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+      button.action {
+        background: #0d47a1;
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      @media (max-width: 800px) {
+        body {
+          flex-direction: column;
+        }
+        #sidebar {
+          width: 100%;
+          flex-direction: row;
+          overflow: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sidebar">
+      <h3>Aluno</h3>
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="disciplinas">Disciplinas</button>
+      <button data-view="minhas">Minhas Matrículas</button>
+      <button id="logout">Sair</button>
+    </div>
+
+    <div id="main">
+      <div id="view-dashboard" class="view">
+        <h1>Bem-vindo</h1>
+        <div class="card">
+          <p>
+            Visualize disciplinas disponíveis e faça matrícula. Use o menu para
+            navegar.
+          </p>
+        </div>
+      </div>
+
+      <div id="view-disciplinas" class="view" style="display: none">
+        <h1>Disciplinas</h1>
+        <div class="card">
+          <div class="row" style="display: flex; gap: 8px">
+            <input
+              id="searchDisc"
+              placeholder="Buscar disciplina"
+              style="flex: 1"
+            />
+            <button class="action" id="btnLoadDiscs">Carregar</button>
+          </div>
+          <table id="tableDiscs">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nome</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="pagination" id="pDiscs"></div>
+        </div>
+      </div>
+
+      <div id="view-minhas" class="view" style="display: none">
+        <h1>Minhas Matrículas</h1>
+        <div class="card">
+          <button class="action" id="btnLoadMyMats">
+            Carregar minhas matrículas
+          </button>
+          <table id="tableMyMats">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Turma</th>
+                <th>Disciplina</th>
+                <th>Data</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h4>Matricular na turma</h4>
+          <div style="display: flex; gap: 8px">
+            <select id="selTurmasForMat" style="flex: 1"></select>
+            <button class="action" id="btnMatricular">Matricular</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API = "http://localhost:3000/api";
+      const token = localStorage.getItem("token");
+      if (!token) window.location.href = "authentication.html";
+      const headersAuth = () => ({
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      });
+
+      document.querySelectorAll("#sidebar button[data-view]").forEach((b) =>
+        b.addEventListener("click", () => {
+          document
+            .querySelectorAll("#sidebar button")
+            .forEach((x) => x.classList.remove("active"));
+          b.classList.add("active");
+          const v = b.getAttribute("data-view");
+          document
+            .querySelectorAll(".view")
+            .forEach((x) => (x.style.display = "none"));
+          document.getElementById("view-" + v).style.display = "block";
+          if (v === "disciplinas") loadDisciplinas(1);
+          if (v === "minhas") {
+            loadMyMats();
+            loadTurmasForMat();
+          }
+        })
+      );
+
+      document.getElementById("logout").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        window.location.href = "authentication.html";
+      });
+
+      /* Disciplinas com paginação */
+      let discPage = 1,
+        discLimit = 10;
+      async function loadDisciplinas(page = 1) {
+        discPage = page;
+        const q = document.getElementById("searchDisc").value.trim();
+        try {
+          // tenta server-side
+          const res = await fetch(
+            `${API}/disciplinas?page=${page}&limit=${discLimit}${
+              q ? "&q=" + encodeURIComponent(q) : ""
+            }`,
+            { headers: headersAuth() }
+          );
+          let items, total;
+          if (res.ok) {
+            const json = await res.json();
+            items = json.items || json;
+            total = json.total || items.length;
+          } else {
+            const all = await (
+              await fetch(`${API}/disciplinas`, { headers: headersAuth() })
+            ).json();
+            total = all.length;
+            items = all.slice((page - 1) * discLimit, page * discLimit);
+          }
+          const tbody = document.querySelector("#tableDiscs tbody");
+          tbody.innerHTML = "";
+          items.forEach(
+            (d) =>
+              (tbody.innerHTML += `<tr><td>${d.id}</td><td>${
+                d.codigo || ""
+              }</td><td>${d.nome}</td><td><button onclick="viewTurmasByDisc('${
+                d.id
+              }')">Ver turmas</button></td></tr>`)
+          );
+          renderPaginationClient(
+            "pDiscs",
+            total,
+            page,
+            discLimit,
+            loadDisciplinas
+          );
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao carregar disciplinas");
+        }
+      }
+      document
+        .getElementById("btnLoadDiscs")
+        .addEventListener("click", () => loadDisciplinas(1));
+
+      /* Minhas matrículas */
+      async function loadMyMats() {
+        try {
+          const res = await fetch(`${API}/matriculas?me=true`, {
+            headers: headersAuth(),
+          });
+          if (!res.ok) throw new Error("Erro");
+          const data = await res.json();
+          const tbody = document.querySelector("#tableMyMats tbody");
+          tbody.innerHTML = "";
+          data.forEach(
+            (m) =>
+              (tbody.innerHTML += `<tr><td>${m.id}</td><td>${
+                m.turmaNome || m.turma || m.turma_id
+              }</td><td>${m.disciplinaNome || m.disciplina || ""}</td><td>${
+                m.created_at || m.data || ""
+              }</td><td><button onclick="cancelMyMat('${
+                m.id
+              }')">Cancelar</button></td></tr>`)
+          );
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao carregar minhas matrículas");
+        }
+      }
+      document
+        .getElementById("btnLoadMyMats")
+        .addEventListener("click", loadMyMats);
+
+      async function cancelMyMat(id) {
+        if (!confirm("Cancelar matrícula?")) return;
+        const res = await fetch(`${API}/matriculas/${id}`, {
+          method: "DELETE",
+          headers: headersAuth(),
+        });
+        if (res.ok) {
+          alert("Cancelada");
+          loadMyMats();
+        } else alert("Erro");
+      }
+
+      /* Matricular aluno (usuário atual) */
+      async function loadTurmasForMat() {
+        const res = await fetch(`${API}/turmas`, { headers: headersAuth() });
+        const turmas = await res.json();
+        const sel = document.getElementById("selTurmasForMat");
+        sel.innerHTML = "";
+        turmas.forEach(
+          (t) =>
+            (sel.innerHTML += `<option value="${t.id}">${
+              t.codigo || t.nome
+            } — ${t.disciplinaNome || t.disciplina}</option>`)
+        );
+      }
+
+      document
+        .getElementById("btnMatricular")
+        .addEventListener("click", async () => {
+          const turmaId = document.getElementById("selTurmasForMat").value;
+          if (!turmaId) return alert("Escolha turma");
+          // ALUNO faz POST /api/matriculas com { turmaId } (o middleware attachAlunoId usa token)
+          const res = await fetch(`${API}/matriculas`, {
+            method: "POST",
+            headers: headersAuth(),
+            body: JSON.stringify({ turmaId }),
+          });
+          if (res.ok) {
+            alert("Matriculado");
+            loadMyMats();
+          } else {
+            const txt = await res.text();
+            alert("Erro: " + txt);
+          }
+        });
+
+      /* Simple pagination renderer for aluno page */
+      function renderPaginationClient(containerId, total, page, limit, onPage) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        const pages = Math.max(1, Math.ceil(total / limit));
+        const prev = document.createElement("button");
+        prev.textContent = "←";
+        prev.disabled = page <= 1;
+        prev.onclick = () => onPage(page - 1);
+        const next = document.createElement("button");
+        next.textContent = "→";
+        next.disabled = page >= pages;
+        next.onclick = () => onPage(page + 1);
+        container.appendChild(prev);
+        container.appendChild(
+          document.createTextNode(
+            ` Página ${page} de ${pages} (` + total + " itens) "
+          )
+        );
+        container.appendChild(next);
+      }
+
+      window.viewTurmasByDisc = (discId) => {
+        // carregar turmas filtrando por disciplina
+        (async () => {
+          const res = await fetch(`${API}/turmas?disciplinaId=${discId}`, {
+            headers: headersAuth(),
+          });
+          const lista = await res.json();
+          // abrir modal/simple alert for user choose -> but we will show in a prompt (quick)
+          let str =
+            "Turmas:\\n" +
+            lista
+              .map(
+                (t) =>
+                  `${t.id} — ${t.codigo || t.nome} (${t.vagas || "?"} vagas)`
+              )
+              .join("\\n");
+          alert(str);
+        })();
+      };
+    </script>
+  </body>
+</html>
