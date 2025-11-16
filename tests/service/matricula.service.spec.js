@@ -17,6 +17,15 @@ const mockMatriculaRepository = {
 
 const mockWithTransaction = jest.fn();
 
+// --- ESTA É A CORREÇÃO PRINCIPAL ---
+// O mockClient deve ser um objeto que simula a interface do cliente pg,
+// senão client.query() falhará.
+const mockClient = {
+  query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }),
+  release: jest.fn(),
+};
+// --- FIM DA CORREÇÃO ---
+
 await jest.unstable_mockModule('../../src/repositories/TurmaRepository.js', () => ({
   default: mockTurmaRepository,
   __esModule: true,
@@ -35,12 +44,14 @@ await jest.unstable_mockModule('../../src/db/pool.js', () => ({
 
 const { default: MatriculaService } = await import('../../src/services/MatriculaService.js');
 
-const mockClient = Symbol('client');
 const alunoId = 'aluno-1';
 const turmaId = 'turma-1';
 
 const resetMocks = () => {
   jest.clearAllMocks();
+  // Reseta o mockClient para o estado padrão
+  mockClient.query.mockResolvedValue({ rows: [], rowCount: 0 });
+  
   mockWithTransaction.mockImplementation((fn) => fn(mockClient));
   mockTurmaRepository.getHorarioCodigo.mockReturnValue('21');
   mockMatriculaRepository.listHorariosCodigoAtivosDoAluno.mockResolvedValue([]);
@@ -110,6 +121,11 @@ describe('MatriculaService.enroll', () => {
       criadoEm: '2024-01-01T00:00:00.000Z',
     });
     expect(mockMatriculaRepository.insertMatricula).toHaveBeenCalledWith({ alunoId, turmaId }, { client: mockClient });
+    // Verifica se o advisory lock foi chamado
+    expect(mockClient.query).toHaveBeenCalledWith(
+      expect.stringContaining('pg_advisory_xact_lock'),
+      [turmaId]
+    );
   });
 });
 

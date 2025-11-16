@@ -16,10 +16,9 @@ class MatriculaService {
   async enroll({ alunoId, turmaId }) {
     if (!turmaId) throw createAppError("TURMA_INEXISTENTE");
     const matricula = await withTransaction(async (client) => {
-      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))", [turmaId]);
-
+      
       const turma = await TurmaRepository.findById(turmaId, { client, forUpdate: true });
-      if (!turma) throw createAppError("TURMA_INEXISTENTE");
+      if (!turma) throw createAppError("TURMA_INEXISTENTE");  
 
       const ja = await MatriculaRepository.existsMatriculaAtivaDoAlunoNaTurma(alunoId, turmaId, { client });
       if (ja) throw createAppError("JA_MATRICULADO_NA_TURMA");
