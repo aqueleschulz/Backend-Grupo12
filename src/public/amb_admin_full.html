@@ -265,7 +265,20 @@
           <div class="row">
             <input id="turmaCodigo" placeholder="Código" style="flex: 1" />
             <input id="turmaVagas" placeholder="Vagas" style="width: 100px" />
-            <input id="turmaDia" placeholder="Dia" style="width: 140px" />
+            <select id="turmaDia" style="width: 140px">
+              <option value="">Selecione o Dia</option>
+              <option value="2">Segunda-feira</option>
+              <option value="3">Terça-feira</option>
+              <option value="4">Quarta-feira</option>
+              <option value="5">Quinta-feira</option>
+              <option value="6">Sexta-feira</option>
+            </select>
+            <select id="turmaTurno" style="width: 100px">
+              <option value="">Turno</option>
+              <option value="1">Manhã</option>
+              <option value="2">Tarde</option>
+              <option value="3">Noite</option>
+            </select>
           </div>
           <div class="row" style="margin-top: 8px">
             <select id="selDiscForTurma" style="flex: 1"></select>
@@ -787,7 +800,7 @@
               codigo,
               vagas,
               dia,
-              turno: "",
+              turno: turmaTurno.value,
               disciplinaId,
               professorId,
             };
