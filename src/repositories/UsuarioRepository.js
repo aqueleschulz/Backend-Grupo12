@@ -1,57 +1,110 @@
-import pool from '../db/pool.js';
+import pool from "../db/pool.js";
 
-const executor = (client) => client ?? pool;
-
-// Buscar o usuário pelo email
-async function findByEmail(email, { client } = {}) {
-  if (!email) {
-    return null;
-  }
-
-  const db = executor(client);
-  const result = await db.query(
-    `
+const UsuarioRepository = {
+  async findAll() {
+    const sql = `
       SELECT 
         u.id, 
-        u.email, 
-        u.senha_hash, 
-        u.nome,
-        ARRAY_AGG(r.nome) as roles
+        u.nome, 
+        u.email,
+        COALESCE(ARRAY_AGG(r.nome) FILTER (WHERE r.nome IS NOT NULL), '{}') AS roles
       FROM usuario u
       LEFT JOIN usuariorole ur ON ur.usuario_id = u.id
       LEFT JOIN role r ON r.id = ur.role_id
-      WHERE u.email = $1
       GROUP BY u.id
-    `,
-    [email],
-  );
+      ORDER BY u.nome;
+    `;
 
+    const result = await pool.query(sql);
+    return result.rows;
+  },
+
+  async findByEmail(email) {
+  const sql = `
+    SELECT 
+      u.id,
+      u.nome,
+      u.email,
+      u.senha_hash,
+      COALESCE(ARRAY_AGG(r.nome) FILTER (WHERE r.nome IS NOT NULL), '{}') AS roles
+    FROM usuario u
+    LEFT JOIN usuariorole ur ON ur.usuario_id = u.id
+    LEFT JOIN role r ON r.id = ur.role_id
+    WHERE u.email = $1
+    GROUP BY u.id
+    LIMIT 1;
+  `;
+
+  const result = await pool.query(sql, [email]);
   return result.rows[0] ?? null;
-}
+  },
 
-async function findAll() {
-  const query = `
-    SELECT id, nome, email, roles
-    FROM usuario
-    ORDER BY nome ASC
-  `;
-  const result = await db.query(query);
-  return result.rows;
-}
+  async create({ nome, email, senha_hash, roles }) {
+    const sqlUsuario = `
+      INSERT INTO usuario (id, nome, email, senha_hash)
+      VALUES (uuid_generate_v4(), $1, $2, $3)
+      RETURNING id;
+    `;
 
-async function findByRole(role) {
-  const query = `
-    SELECT id, nome, email, roles
-    FROM usuario
-    WHERE $1 = ANY(roles)
-    ORDER BY nome ASC
-  `;
-  const result = await db.query(query, [role]);
-  return result.rows;
-}
+    const result = await pool.query(sqlUsuario, [nome, email, senha_hash]);
+    const usuarioId = result.rows[0].id;
 
-export const UsuarioRepository = {
-  findByEmail,
-  findAll,
-  findByRole
+    if (roles?.length) {
+      for (const roleName of roles) {
+        const sqlRole = `
+          INSERT INTO usuariorole (usuario_id, role_id)
+          SELECT $1, id FROM role WHERE nome = $2;
+        `;
+        await pool.query(sqlRole, [usuarioId, roleName]);
+      }
+    }
+
+    return { id: usuarioId, nome, email, roles };
+  },
+
+  async delete(id) {
+    await pool.query(`DELETE FROM usuariorole WHERE usuario_id = $1`, [id]);
+    await pool.query(`DELETE FROM usuario WHERE id = $1`, [id]);
+  },
+
+  
+  async findById(id) {
+    const sql = `
+      SELECT 
+        u.id, 
+        u.nome, 
+        u.email,
+        COALESCE(ARRAY_AGG(r.nome) FILTER (WHERE r.nome IS NOT NULL), '{}') AS roles
+      FROM usuario u
+      LEFT JOIN usuariorole ur ON ur.usuario_id = u.id
+      LEFT JOIN role r ON r.id = ur.role_id
+      WHERE u.id = $1
+      GROUP BY u.id;
+    `;
+
+    const result = await pool.query(sql, [id]);
+    return result.rows[0] ?? null;
+},
+
+  async update(id, { nome, email, roles }) {
+    await pool.query(
+      `UPDATE usuario SET nome = $1, email = $2 WHERE id = $3`,
+      [nome, email, id]
+    );
+
+    if (roles) {
+      await pool.query(`DELETE FROM usuariorole WHERE usuario_id = $1`, [id]);
+
+      for (const roleName of roles) {
+        await pool.query(
+          `INSERT INTO usuariorole (usuario_id, role_id)
+           SELECT $1, id FROM role WHERE nome = $2`,
+          [id, roleName]
+        );
+      }
+    }
+  },
 };
+
+
+export default UsuarioRepository;

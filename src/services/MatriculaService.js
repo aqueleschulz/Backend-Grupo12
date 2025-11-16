@@ -1,156 +1,87 @@
 import { createAppError } from "../errors/AppError.js";
 import MatriculaRepository from "../repositories/MatriculaRepository.js";
 import TurmaRepository from "../repositories/TurmaRepository.js";
-import { withTransaction } from "../db/pool.js";
-import db from "../db/pool.js";
+import { withTransaction } from "../db/pool.js"; // assume withTransaction exportado no pool
 
 const buildMatriculaResponse = (matricula, turma) => ({
   id: matricula.id,
   alunoId: matricula.aluno_id,
   turmaId: matricula.turma_id,
-  horarioCodigo: TurmaRepository.getHorarioCodigo(turma),
+  horarioCodigo: turma ? `${turma.dia || ''}-${turma.turno || ''}` : null,
   status: matricula.status ?? "ATIVA",
   criadoEm: matricula.data,
 });
 
 class MatriculaService {
-
   async enroll({ alunoId, turmaId }) {
     if (!turmaId) {
       throw createAppError("TURMA_INEXISTENTE");
     }
 
-    const matricula = await withTransaction(
-      async (client) => {
-        // Evita dupla matrícula concorrente
-        await client.query(
-          "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))",
-          [turmaId]
-        );
+    const matricula = await withTransaction(async (client) => {
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))", [turmaId]);
 
-        // Verifica se a turma existe
-        const turma = await TurmaRepository.findById(turmaId, {
-          client,
-          forUpdate: true,
-        });
-        if (!turma) {
-          throw createAppError("TURMA_INEXISTENTE");
-        }
+      const turma = await TurmaRepository.findById(turmaId, { client, forUpdate: true });
+      if (!turma) throw createAppError("TURMA_INEXISTENTE");
 
-        // Verifica matrícula duplicada
-        const jaMatriculado =
-          await MatriculaRepository.existsMatriculaAtivaDoAlunoNaTurma(
-            alunoId,
-            turmaId,
-            { client }
-          );
+      const ja = await MatriculaRepository.existsMatriculaAtivaDoAlunoNaTurma(alunoId, turmaId, { client });
+      if (ja) throw createAppError("JA_MATRICULADO_NA_TURMA");
 
-        if (jaMatriculado) {
-          throw createAppError("JA_MATRICULADO_NA_TURMA");
-        }
+      const ocupadas = Number(await MatriculaRepository.countMatriculasAtivasNaTurma(turmaId, { client }));
+      const capacidade = turma.vagas == null ? Number.POSITIVE_INFINITY : Number(turma.vagas);
+      if (Number.isFinite(capacidade) && Number.isFinite(ocupadas) && ocupadas >= capacidade) {
+        throw createAppError("SEM_VAGAS");
+      }
 
-        // Verifica vagas
-        const ocupadas = Number(
-          await MatriculaRepository.countMatriculasAtivasNaTurma(turmaId, {
-            client,
-          })
-        );
-        const capacidade =
-          turma.vagas == null ? Number.POSITIVE_INFINITY : Number(turma.vagas);
+      const horarioAluno = await MatriculaRepository.listHorariosCodigoAtivosDoAluno(alunoId, { client });
+      const horarioTurma = TurmaRepository.getHorarioCodigo ? TurmaRepository.getHorarioCodigo(turma) : `${turma.dia||''}-${turma.turno||''}`;
+      if (horarioTurma && horarioAluno.includes(horarioTurma)) {
+        throw createAppError("CHOQUE_HORARIO");
+      }
 
-        if (
-          Number.isFinite(capacidade) &&
-          Number.isFinite(ocupadas) &&
-          ocupadas >= capacidade
-        ) {
-          throw createAppError("SEM_VAGAS");
-        }
-
-        // Verifica choque de horário
-        const horarioAluno =
-          await MatriculaRepository.listHorariosCodigoAtivosDoAluno(alunoId, {
-            client,
-          });
-        const horarioTurma = TurmaRepository.getHorarioCodigo(turma);
-
-        if (horarioTurma && horarioAluno.includes(horarioTurma)) {
-          throw createAppError("CHOQUE_HORARIO");
-        }
-
-        // Cria a matrícula
-        const novaMatricula = await MatriculaRepository.insertMatricula(
-          { alunoId, turmaId },
-          { client }
-        );
-
-        return buildMatriculaResponse(novaMatricula, turma);
-      },
-      { isolationLevel: "SERIALIZABLE", retries: 2 }
-    );
+      const nova = await MatriculaRepository.insertMatricula({ alunoId, turmaId }, { client });
+      return buildMatriculaResponse(nova, turma);
+    }, { isolationLevel: "SERIALIZABLE", retries: 2 });
 
     return matricula;
   }
 
-
-  // CANCELAR MATRÍCULA
-
   async cancel({ alunoId, matriculaId }) {
-    const matricula = await MatriculaRepository.findMatriculaDoAluno(
-      matriculaId,
-      alunoId
-    );
-
-    if (!matricula) {
-      throw createAppError("MATRICULA_NAO_ENCONTRADA");
-    }
-
-    if (matricula.aluno_id !== alunoId) {
-      throw createAppError("MATRICULA_FORBIDDEN");
-    }
-
+    const matricula = await MatriculaRepository.findMatriculaDoAluno(matriculaId, alunoId);
+    if (!matricula) throw createAppError("MATRICULA_NAO_ENCONTRADA");
+    if (matricula.aluno_id !== alunoId) throw createAppError("MATRICULA_FORBIDDEN");
     await MatriculaRepository.cancelarMatricula(matriculaId);
   }
 
-
-  // LISTAR MATRÍCULAS DO ALUNO (PAINEL DO ALUNO)
-
   async listByAluno(alunoId) {
-    const matriculas =
-      await MatriculaRepository.listMatriculasDoAluno(alunoId);
-
-    return matriculas.map((matricula) => ({
-      id: matricula.id,
-      alunoId: matricula.aluno_id,
-      turmaId: matricula.turma_id,
-      status: matricula.status ?? "ATIVA",
-      turmaCodigo: matricula.turma_codigo,
-      disciplinaNome: matricula.disciplina_nome,
-      professorNome: matricula.professor_nome,
-      horarioCodigo: matricula.horario_codigo,
-      criadoEm: matricula.data,
+    const matriculas = await MatriculaRepository.listMatriculasDoAluno(alunoId);
+    return matriculas.map(m => ({
+      id: m.id,
+      alunoId: m.aluno_id,
+      turmaId: m.turma_id,
+      status: m.status ?? "ATIVA",
+      turmaCodigo: m.turma_codigo,
+      disciplinaNome: m.disciplina_nome,
+      professorNome: m.professor_nome,
+      horarioCodigo: m.horario_codigo,
+      criadoEm: m.data,
     }));
   }
 
-
-  //  LISTAR TODAS AS MATRÍCULAS (ADMIN)
-
+  // admin list all
   async listAll() {
-    const sql = `
-      SELECT 
-        m.id,
-        m.aluno_id,
-        m.turma_id,
-        m.data,
-        m.status
-      FROM matricula m
-      ORDER BY m.data DESC
-    `;
+    return MatriculaRepository.listAll();
+  }
 
-    const result = await db.query(sql);
-    return result.rows;
+  // admin create
+  async createAdmin({ alunoId, turmaId }) {
+    // reusa lógica de validação - cria matrícula sem attachAluno middleware
+    return this.enroll({ alunoId, turmaId });
+  }
+
+  async cancelAdmin(id) {
+    await MatriculaRepository.cancelarMatricula(id);
   }
 }
 
 export default new MatriculaService();
-
-

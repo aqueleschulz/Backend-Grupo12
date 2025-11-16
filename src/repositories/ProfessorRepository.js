@@ -8,8 +8,8 @@ export const ProfessorRepository = {
       return null;
     }
 
-    const db = executor(client);
-    const result = await db.query(
+    const pool = executor(client);
+    const result = await pool.query(
       `
         SELECT p.id, p.siape, u.nome, u.email
         FROM professor p
@@ -27,8 +27,8 @@ export const ProfessorRepository = {
       return null;
     }
 
-    const db = executor(client);
-    const result = await db.query(
+    const pool = executor(client);
+    const result = await pool.query(
       `
         SELECT p.id, p.siape, u.nome, u.email
         FROM professor p

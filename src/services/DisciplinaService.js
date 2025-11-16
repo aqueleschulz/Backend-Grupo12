@@ -1,47 +1,31 @@
-import { createAppError } from "../errors/AppError.js";
 import DisciplinaRepository from "../repositories/DisciplinaRepository.js";
+import { createAppError } from "../errors/AppError.js";
 
 class DisciplinaService {
   async listar() {
-    return await DisciplinaRepository.findAll();
+    return DisciplinaRepository.findAll();
   }
 
   async buscarPorId(id) {
-    const disciplina = await DisciplinaRepository.findById(id);
-
-    if (!disciplina) {
-      throw createAppError("DISCIPLINA_NAO_ENCONTRADA");
-    }
-
-    return disciplina;
+    const disc = await DisciplinaRepository.findById(id);
+    if (!disc) throw createAppError("DISCIPLINA_NAO_ENCONTRADA");
+    return disc;
   }
 
-  async criar({ nome }) {
-    const codigo = Math.random().toString(36).substring(2, 8).toUpperCase(); // código automático
-
-    return await DisciplinaRepository.create({
-      nome,
-      codigo,
-    });
+  async criar({ nome, codigo }) {
+    const cod = codigo || Math.random().toString(36).substring(2, 8).toUpperCase();
+    return DisciplinaRepository.create({ nome, codigo: cod });
   }
 
-  async atualizar(id, { nome }) {
-    const disciplina = await DisciplinaRepository.findById(id);
-
-    if (!disciplina) {
-      throw createAppError("DISCIPLINA_NAO_ENCONTRADA");
-    }
-
-    return await DisciplinaRepository.update(id, { nome });
+  async atualizar(id, { nome, codigo }) {
+    const disc = await DisciplinaRepository.findById(id);
+    if (!disc) throw createAppError("DISCIPLINA_NAO_ENCONTRADA");
+    return DisciplinaRepository.update(id, { nome, codigo });
   }
 
   async excluir(id) {
-    const disciplina = await DisciplinaRepository.findById(id);
-
-    if (!disciplina) {
-      throw createAppError("DISCIPLINA_NAO_ENCONTRADA");
-    }
-
+    const disc = await DisciplinaRepository.findById(id);
+    if (!disc) throw createAppError("DISCIPLINA_NAO_ENCONTRADA");
     await DisciplinaRepository.delete(id);
   }
 }

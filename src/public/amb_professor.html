@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Painel Professor</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      body {
+        display: flex;
+        min-height: 100vh;
+        background: #f4f6f9;
+      }
+      #sidebar {
+        width: 240px;
+        background: #0d47a1;
+        color: #fff;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      #sidebar h2 {
+        font-size: 18px;
+      }
+      #sidebar button {
+        background: rgba(255, 255, 255, 0.12);
+        border: none;
+        color: #fff;
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      #sidebar button.active {
+        background: #1976d2;
+      }
+      #main {
+        flex: 1;
+        padding: 22px;
+        overflow: auto;
+      }
+      h1 {
+        color: #0d47a1;
+        margin-bottom: 12px;
+      }
+      .card {
+        background: #fff;
+        padding: 14px;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+        margin-bottom: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+      input,
+      select,
+      button,
+      textarea {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+      button.action {
+        background: #0d47a1;
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th {
+        background: #0d47a1;
+        color: #fff;
+        padding: 8px;
+        text-align: left;
+      }
+      th,
+      td {
+        border: 1px solid #e6e6e6;
+        padding: 8px;
+      }
+      .muted {
+        color: #666;
+        font-size: 13px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal .box {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        min-width: 320px;
+        max-width: 720px;
+      }
+      @media (max-width: 800px) {
+        #sidebar {
+          width: 100%;
+          flex-direction: row;
+          overflow-x: auto;
+        }
+        body {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sidebar">
+      <h2>Professor</h2>
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="minhas-turmas">Minhas Turmas</button>
+      <button data-view="criar-turma">Criar / Editar Turma</button>
+      <button id="logoutBtn">Sair</button>
+    </div>
+
+    <div id="main">
+      <div id="view-dashboard" class="view">
+        <h1>Bem-vindo, Professor</h1>
+        <div class="card">
+          <p class="muted">
+            Aqui você vê de forma rápida suas turmas e ações disponíveis.
+          </p>
+          <div class="grid" style="margin-top: 12px">
+            <div class="card">
+              <h3 id="countMyTurmas">0</h3>
+              <div class="muted">Minhas turmas</div>
+            </div>
+            <div class="card">
+              <h3 id="countMyAlunos">0</h3>
+              <div class="muted">Alunos matriculados (total)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-minhas-turmas" class="view" style="display: none">
+        <h1>Minhas Turmas</h1>
+        <div class="card">
+          <div class="row" style="margin-bottom: 8px">
+            <input
+              id="searchTurma"
+              placeholder="Buscar por código ou nome"
+              style="flex: 1"
+            />
+            <button class="action" id="btnLoadMyTurmas">Carregar</button>
+          </div>
+          <table id="tableMyTurmas">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Disciplina</th>
+                <th>Vagas</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h4>Detalhes da turma</h4>
+          <div id="turmaDetails">
+            Selecione "Ver alunos" em uma turma para ver detalhes.
+          </div>
+        </div>
+      </div>
+
+      <div id="view-criar-turma" class="view" style="display: none">
+        <h1>Criar / Editar Turma</h1>
+        <div class="card">
+          <input id="turmaIdEdit" type="hidden" />
+          <div class="row">
+            <input
+              id="turmaCodigo"
+              placeholder="Código (opcional)"
+              style="flex: 1"
+            /><input id="turmaVagas" placeholder="Vagas" style="width: 120px" />
+          </div>
+          <div class="row" style="margin-top: 8px">
+            <input id="turmaDia" placeholder="Dia" style="flex: 1" /><input
+              id="turmaTurno"
+              placeholder="Turno"
+              style="width: 120px"
+            />
+          </div>
+          <div class="row" style="margin-top: 8px">
+            <select id="selDiscForTurma" style="flex: 1"></select>
+          </div>
+          <div style="margin-top: 12px">
+            <button class="action" id="btnSaveTurma">Salvar Turma</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- modal para lista de alunos -->
+    <div id="modal" class="modal">
+      <div class="box">
+        <h3>Alunos matriculados</h3>
+        <div id="modalContent"></div>
+        <div style="margin-top: 12px; text-align: right">
+          <button id="closeModal">Fechar</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API = "http://localhost:3000/api";
+      const token = localStorage.getItem("token");
+      if (!token) window.location.href = "authentication.html";
+      let user = null;
+      try {
+        user = JSON.parse(localStorage.getItem("user") || "null");
+      } catch (e) {
+        user = null;
+      }
+
+      async function fetchUserFromServer() {
+        // opcional: caso o frontend não tenha salvo o objeto 'user'
+        try {
+          const res = await fetch(`${API}/usuarios/me`, {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (res.ok) {
+            user = await res.json();
+            localStorage.setItem("user", JSON.stringify(user));
+            return;
+          }
+        } catch (e) {
+          /* ignore */
+        }
+      }
+
+      (async () => {
+        if (!user) await fetchUserFromServer();
+        if (!user) {
+          /* não temos user, mas continuamos */ console.warn(
+            "user não encontrado no localStorage"
+          );
+        }
+        loadDashboard();
+        loadMyTurmas();
+      })();
+
+      function qs(selector) {
+        return document.querySelector(selector);
+      }
+
+      // switch views
+      document.querySelectorAll("#sidebar button[data-view]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll("#sidebar button")
+            .forEach((x) => x.classList.remove("active"));
+          btn.classList.add("active");
+          const view = btn.getAttribute("data-view");
+          document
+            .querySelectorAll(".view")
+            .forEach((v) => (v.style.display = "none"));
+          document.getElementById("view-" + view).style.display = "block";
+          if (view === "minhas-turmas") loadMyTurmas();
+          if (view === "criar-turma") loadDisciplinesForSelect();
+        });
+      });
+
+      qs("#logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "authentication.html";
+      });
+
+      // Dashboard counts
+      async function loadDashboard() {
+        try {
+          const allTurmas = await (
+            await fetch(`${API}/turmas`, {
+              headers: { Authorization: "Bearer " + token },
+            })
+          ).json();
+          let myId = user?.id || null;
+          const myTurmas = myId
+            ? allTurmas.filter(
+                (t) =>
+                  t.professorId == myId ||
+                  t.professor == myId ||
+                  (t.professor && t.professor.id == myId)
+              )
+            : allTurmas;
+          document.getElementById("countMyTurmas").textContent =
+            myTurmas.length;
+          // count students total across my turmas (best effort)
+          const mats = await (
+            await fetch(`${API}/admin/matriculas`, {
+              headers: { Authorization: "Bearer " + token },
+            })
+          )
+            .json()
+            .catch(() => []);
+          let myStudentsCount = 0;
+          if (Array.isArray(mats) && myId) {
+            myStudentsCount = mats.filter((m) =>
+              myTurmas.some((t) => t.id == m.turma_id || t.id == m.turmaId)
+            ).length;
+          }
+          document.getElementById("countMyAlunos").textContent =
+            myStudentsCount;
+        } catch (e) {
+          console.error("dashboard", e);
+        }
+      }
+
+      // CARREGAR MINHAS TURMAS
+      qs("#btnLoadMyTurmas").addEventListener("click", () => loadMyTurmas());
+      async function loadMyTurmas() {
+        try {
+          const q = qs("#searchTurma").value.trim().toLowerCase();
+          const res = await fetch(`${API}/turmas`, {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!res.ok) throw new Error("Erro turmas");
+          const turmas = await res.json();
+          let myId = user?.id || null;
+          const mine = myId
+            ? turmas.filter(
+                (t) =>
+                  t.professorId == myId ||
+                  t.professor == myId ||
+                  (t.professor &&
+                    (t.professor.id == myId ||
+                      ("" + t.professor)
+                        .toLowerCase()
+                        .includes(("" + myId).toLowerCase())))
+              )
+            : turmas;
+          const filtered = q
+            ? mine.filter(
+                (t) =>
+                  (t.codigo || "").toLowerCase().includes(q) ||
+                  (t.nome || "").toLowerCase().includes(q)
+              )
+            : mine;
+          const tbody = qs("#tableMyTurmas tbody");
+          tbody.innerHTML = "";
+          filtered.forEach((t) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${t.id}</td><td>${t.codigo || ""}</td><td>${
+              t.disciplinaNome || t.disciplina || ""
+            }</td><td>${t.vagas || ""}</td>
+        <td>
+          <button onclick="viewTurma('${t.id}')">Ver alunos</button>
+          <button onclick="editTurma('${t.id}')">Editar</button>
+          <button onclick="deleteTurma('${t.id}')">Excluir</button>
+        </td>`;
+            tbody.appendChild(tr);
+          });
+          document.getElementById("countMyTurmas").textContent =
+            filtered.length;
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao carregar turmas");
+        }
+      }
+
+      // View turma details (inclui listar alunos se API fornecer)
+      window.viewTurma = async (id) => {
+        try {
+          const res = await fetch(`${API}/turmas/${id}`, {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!res.ok) throw new Error("Erro turma");
+          const t = await res.json();
+          // montar lista de alunos se houver
+          let html = `<p><strong>Código:</strong> ${
+            t.codigo || ""
+          } — <strong>Disciplina:</strong> ${
+            t.disciplinaNome || t.disciplina || ""
+          }</p>`;
+          if (t.alunos && Array.isArray(t.alunos)) {
+            html +=
+              "<table><thead><tr><th>ID</th><th>Nome</th><th>Email</th></tr></thead><tbody>";
+            t.alunos.forEach(
+              (a) =>
+                (html += `<tr><td>${a.id}</td><td>${a.nome}</td><td>${a.email}</td></tr>`)
+            );
+            html += "</tbody></table>";
+          } else {
+            // tentar buscar matrículas relacionadas
+            const mats = await (
+              await fetch(`${API}/admin/matriculas`, {
+                headers: { Authorization: "Bearer " + token },
+              })
+            )
+              .json()
+              .catch(() => []);
+            const related = mats.filter(
+              (m) => m.turma_id == id || m.turmaId == id
+            );
+            if (related.length) {
+              html +=
+                "<table><thead><tr><th>ID</th><th>Aluno</th><th>Matricula</th></tr></thead><tbody>";
+              related.forEach(
+                (m) =>
+                  (html += `<tr><td>${m.aluno_id || m.alunoId}</td><td>${
+                    m.alunoNome || m.aluno || ""
+                  }</td><td>${m.id}</td></tr>`)
+              );
+              html += "</tbody></table>";
+            } else
+              html +=
+                '<p class="muted">Nenhum aluno disponível na resposta da API.</p>';
+          }
+          qs("#turmaDetails").innerHTML = html;
+          qs("#modalContent").innerHTML = html;
+          qs("#modal").style.display = "flex";
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao obter detalhes");
+        }
+      };
+
+      // fechar modal
+      qs("#closeModal").addEventListener("click", () => {
+        qs("#modal").style.display = "none";
+        qs("#modalContent").innerHTML = "";
+      });
+
+      // EDITAR TURMA
+      window.editTurma = async (id) => {
+        try {
+          const res = await fetch(`${API}/turmas/${id}`, {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!res.ok) throw new Error("Erro ao obter turma");
+          const t = await res.json();
+          // preencher o form de criar/editar
+          document.getElementById("turmaIdEdit").value = t.id;
+          document.getElementById("turmaCodigo").value = t.codigo || "";
+          document.getElementById("turmaVagas").value = t.vagas || "";
+          document.getElementById("turmaDia").value = t.dia || "";
+          document.getElementById("turmaTurno").value = t.turno || "";
+          // selecionar disciplina (carrega selects primeiro)
+          await loadDisciplinesForSelect();
+          document.getElementById("selDiscForTurma").value =
+            t.disciplinaId || t.disciplina_id || "";
+          // ir para view criar
+          document
+            .querySelectorAll("#sidebar button")
+            .forEach((x) => x.classList.remove("active"));
+          document
+            .querySelector('#sidebar button[data-view="criar-turma"]')
+            .classList.add("active");
+          document
+            .querySelectorAll(".view")
+            .forEach((v) => (v.style.display = "none"));
+          document.getElementById("view-criar-turma").style.display = "block";
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao editar");
+        }
+      };
+
+      // DELETE TURMA
+      window.deleteTurma = async (id) => {
+        if (!confirm("Excluir turma?")) return;
+        const res = await fetch(`${API}/turmas/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token },
+        });
+        if (res.ok) {
+          alert("Turma excluída");
+          loadMyTurmas();
+          loadDashboard();
+        } else {
+          alert("Erro ao excluir turma");
+        }
+      };
+
+      // Carrega disciplinas para select
+      async function loadDisciplinesForSelect() {
+        try {
+          const res = await fetch(`${API}/disciplinas`, {
+            headers: { Authorization: "Bearer " + token },
+          });
+          if (!res.ok) throw new Error("Erro disciplinas");
+          const discs = await res.json();
+          const sel = qs("#selDiscForTurma");
+          sel.innerHTML = '<option value="">Selecione...</option>';
+          discs.forEach(
+            (d) =>
+              (sel.innerHTML += `<option value="${d.id}">${d.nome}</option>`)
+          );
+        } catch (e) {
+          console.error(e);
+          alert("Erro ao carregar disciplinas");
+        }
+      }
+
+      // SALVAR TURMA (CREATE or UPDATE)
+      qs("#btnSaveTurma").addEventListener("click", async () => {
+        try {
+          const id = document.getElementById("turmaIdEdit").value || null;
+          const codigo = document.getElementById("turmaCodigo").value || null;
+          const vagas =
+            Number(document.getElementById("turmaVagas").value) || 0;
+          const dia = document.getElementById("turmaDia").value || "";
+          const turno = document.getElementById("turmaTurno").value || "";
+          const disciplinaId = document.getElementById("selDiscForTurma").value;
+          if (!disciplinaId) return alert("Escolha disciplina");
+          const body = {
+            codigo,
+            vagas,
+            dia,
+            turno,
+            disciplinaId,
+            professorId: user?.id,
+          };
+          let res;
+          if (id) {
+            res = await fetch(`${API}/turmas/${id}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + token,
+              },
+              body: JSON.stringify(body),
+            });
+          } else {
+            res = await fetch(`${API}/turmas`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + token,
+              },
+              body: JSON.stringify(body),
+            });
+          }
+          if (!res.ok) throw new Error("Erro salvar");
+          alert("Salvo com sucesso");
+          document.getElementById("turmaIdEdit").value = "";
+          document.getElementById("turmaCodigo").value = "";
+          document.getElementById("turmaVagas").value = "";
+          document.getElementById("turmaDia").value = "";
+          document.getElementById("turmaTurno").value = "";
+          document
+            .querySelector('#sidebar button[data-view="minhas-turmas"]')
+            .click();
+          loadDashboard();
+        } catch (e) {
+          console.error(e);
+          alert(e.message);
+        }
+      });
+    </script>
+  </body>
+</html>

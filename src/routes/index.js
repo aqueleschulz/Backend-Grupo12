@@ -9,10 +9,10 @@ import adminMatriculasRoutes from "./admin.matriculas.routes.js";
 const router = Router();
 
 router.use("/auth", authRoutes);
-router.use("/turmas", turmasRoutes);
-router.use("/matriculas", matriculasRoutes);
-router.use("/usuarios", usuariosRoutes);
-router.use("/disciplinas", disciplinasRoutes);
-router.use("/admin/matriculas", adminMatriculasRoutes);
+router.use('/usuarios', usuariosRoutes);
+router.use('/disciplinas', disciplinasRoutes);
+router.use('/turmas', turmasRoutes);
+router.use('/matriculas', matriculasRoutes);
+router.use('/admin/matriculas', adminMatriculasRoutes);
 
 export default router;

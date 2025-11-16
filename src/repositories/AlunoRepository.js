@@ -8,8 +8,8 @@ export const AlunoRepository = {
       return null;
     }
 
-    const db = executor(client);
-    const result = await db.query(
+    const pool = executor(client);
+    const result = await pool.query(
       `
         SELECT id, ra
         FROM aluno

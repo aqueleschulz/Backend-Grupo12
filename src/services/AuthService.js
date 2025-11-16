@@ -1,7 +1,7 @@
 // Importar os módulos necessários
 import { PasswordHasher } from '../providers/PasswordHasher.js';
 import { JWTProvider } from '../providers/JWTProvider.js';
-import { UsuarioRepository } from '../repositories/UsuarioRepository.js';
+import UsuarioRepository from '../repositories/UsuarioRepository.js';
 import { createAppError } from '../errors/AppError.js';
 
 async function autenticar({ email, senha }) {
