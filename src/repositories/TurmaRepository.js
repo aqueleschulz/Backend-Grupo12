@@ -1,5 +1,12 @@
 import pool from "../db/pool.js";
 
+function toIntOrNull(value) {
+  if (value === "" || value === undefined || value === null) {
+    return null;
+  }
+  return Number(value);
+}
+
 const TurmaRepository = {
   async findAll() {
     const res = await pool.query(
@@ -16,7 +23,6 @@ const TurmaRepository = {
 
   async findById(id, opts = {}) {
     const client = opts.client ?? pool;
-
     const res = await client.query(
       `
       SELECT t.*, d.nome AS disciplina_nome, u.nome AS professor_nome
@@ -27,44 +33,30 @@ const TurmaRepository = {
       `,
       [id]
     );
-
     return res.rows[0] ?? null;
   },
 
   async create({ codigo, vagas, dia, turno, disciplinaId, professorId }) {
+  const vagasInt = toIntOrNull(vagas);
+  const turnoInt = toIntOrNull(turno);
 
-    const vagasInt =
-      vagas === "" || vagas === undefined || vagas === null
-        ? null
-        : Number(vagas);
-
-    const res = await pool.query(
+  const res = await pool.query(
       `
       INSERT INTO turma (id, codigo, vagas, dia, turno, disciplina_id, professor_id)
       VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6)
       RETURNING *
       `,
-      [
-        codigo,
-        vagasInt,   // 🔥 AQUI ESTÁ A CORREÇÃO DEFINITIVA
-        dia,
-        turno,
-        disciplinaId,
-        professorId
-      ]
+      [codigo, vagasInt, dia, turnoInt, disciplinaId, professorId]
     );
-
     return res.rows[0];
   },
 
+
   async update(id, data) {
+  const vagasInt = toIntOrNull(data.vagas);
+  const turnoInt = toIntOrNull(data.turno);
 
-    const vagasInt =
-      data.vagas === "" || data.vagas === undefined || data.vagas === null
-        ? null
-        : Number(data.vagas);
-
-    const res = await pool.query(
+  const res = await pool.query(
       `
       UPDATE turma
       SET codigo = $1, vagas = $2, dia = $3, turno = $4,
@@ -72,19 +64,11 @@ const TurmaRepository = {
       WHERE id = $7
       RETURNING *
       `,
-      [
-        data.codigo,
-        vagasInt,   // 🔥 MESMA CORREÇÃO PARA UPDATE
-        data.dia,
-        data.turno,
-        data.disciplinaId,
-        data.professorId,
-        id
-      ]
+      [data.codigo, vagasInt, data.dia, turnoInt, data.disciplinaId, data.professorId, id]
     );
-
     return res.rows[0];
   },
+
 
   async delete(id) {
     await pool.query("DELETE FROM turma WHERE id=$1", [id]);

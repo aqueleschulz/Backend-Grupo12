@@ -13,6 +13,9 @@ class TurmaService {
   }
 
   async criar({ codigo, vagas, dia, turno, disciplinaId, professorId }) {
+    // validações mínimas
+    if (!disciplinaId) throw createAppError("PARAMETRO_INVALIDO", { message: "disciplinaId é obrigatório" });
+    // vagas será tratado no repository
     return TurmaRepository.create({ codigo, vagas, dia, turno, disciplinaId, professorId });
   }
 
@@ -22,10 +25,9 @@ class TurmaService {
     return TurmaRepository.update(id, data);
   }
 
-  async excluir(id, usuarioId) {
+  async excluir(id) {
     const t = await TurmaRepository.findById(id);
     if (!t) throw createAppError("TURMA_INEXISTENTE");
-    // aqui você pode validar permissões adicionais se quiser (por exemplo só professor dono ou admin)
     await TurmaRepository.delete(id);
   }
 }

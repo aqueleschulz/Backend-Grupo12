@@ -1,7 +1,7 @@
 import { createAppError } from "../errors/AppError.js";
 import MatriculaRepository from "../repositories/MatriculaRepository.js";
 import TurmaRepository from "../repositories/TurmaRepository.js";
-import { withTransaction } from "../db/pool.js"; // assume withTransaction exportado no pool
+import { withTransaction } from "../db/pool.js";
 
 const buildMatriculaResponse = (matricula, turma) => ({
   id: matricula.id,
@@ -14,10 +14,7 @@ const buildMatriculaResponse = (matricula, turma) => ({
 
 class MatriculaService {
   async enroll({ alunoId, turmaId }) {
-    if (!turmaId) {
-      throw createAppError("TURMA_INEXISTENTE");
-    }
-
+    if (!turmaId) throw createAppError("TURMA_INEXISTENTE");
     const matricula = await withTransaction(async (client) => {
       await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))", [turmaId]);
 
@@ -27,7 +24,7 @@ class MatriculaService {
       const ja = await MatriculaRepository.existsMatriculaAtivaDoAlunoNaTurma(alunoId, turmaId, { client });
       if (ja) throw createAppError("JA_MATRICULADO_NA_TURMA");
 
-      const ocupadas = Number(await MatriculaRepository.countMatriculasAtivasNaTurma(turmaId, { client }));
+      const ocupadas = await MatriculaRepository.countMatriculasAtivasNaTurma(turmaId, { client });
       const capacidade = turma.vagas == null ? Number.POSITIVE_INFINITY : Number(turma.vagas);
       if (Number.isFinite(capacidade) && Number.isFinite(ocupadas) && ocupadas >= capacidade) {
         throw createAppError("SEM_VAGAS");
@@ -35,9 +32,7 @@ class MatriculaService {
 
       const horarioAluno = await MatriculaRepository.listHorariosCodigoAtivosDoAluno(alunoId, { client });
       const horarioTurma = TurmaRepository.getHorarioCodigo ? TurmaRepository.getHorarioCodigo(turma) : `${turma.dia||''}-${turma.turno||''}`;
-      if (horarioTurma && horarioAluno.includes(horarioTurma)) {
-        throw createAppError("CHOQUE_HORARIO");
-      }
+      if (horarioTurma && horarioAluno.includes(horarioTurma)) throw createAppError("CHOQUE_HORARIO");
 
       const nova = await MatriculaRepository.insertMatricula({ alunoId, turmaId }, { client });
       return buildMatriculaResponse(nova, turma);
@@ -64,23 +59,20 @@ class MatriculaService {
       disciplinaNome: m.disciplina_nome,
       professorNome: m.professor_nome,
       horarioCodigo: m.horario_codigo,
-      criadoEm: m.data,
+      criadoEm: m.data
     }));
   }
 
-  // admin list all
   async listAll() {
     return MatriculaRepository.listAll();
   }
 
-  // admin create
   async createAdmin({ alunoId, turmaId }) {
-    // reusa lógica de validação - cria matrícula sem attachAluno middleware
     return this.enroll({ alunoId, turmaId });
   }
 
   async cancelAdmin(id) {
-    await MatriculaRepository.cancelarMatricula(id);
+    return MatriculaRepository.cancelarMatricula(id);
   }
 }
 

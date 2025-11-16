@@ -6,13 +6,11 @@ import DisciplinaController from "../controllers/DisciplinaController.js";
 
 const router = Router();
 
-// rotas públicas de consulta exigem autenticação
 router.use(authenticateJWT);
 
 router.get("/", asyncHandler((req, res) => DisciplinaController.list(req, res)));
 router.get("/:id", asyncHandler((req, res) => DisciplinaController.getById(req, res)));
 
-// somente PROFESSOR e ADMIN podem criar/editar/excluir
 router.post("/", authorizeRoles("ADMIN", "PROFESSOR"), asyncHandler((req, res) => DisciplinaController.create(req, res)));
 router.put("/:id", authorizeRoles("ADMIN", "PROFESSOR"), asyncHandler((req, res) => DisciplinaController.update(req, res)));
 router.delete("/:id", authorizeRoles("ADMIN", "PROFESSOR"), asyncHandler((req, res) => DisciplinaController.delete(req, res)));

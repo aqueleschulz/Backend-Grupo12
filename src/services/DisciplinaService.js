@@ -13,6 +13,7 @@ class DisciplinaService {
   }
 
   async criar({ nome, codigo }) {
+    if (!nome) throw createAppError("PARAMETRO_INVALIDO", { message: "Nome é obrigatório" });
     const cod = codigo || Math.random().toString(36).substring(2, 8).toUpperCase();
     return DisciplinaRepository.create({ nome, codigo: cod });
   }

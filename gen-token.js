@@ -4,8 +4,8 @@ import dotenv from "dotenv";
 dotenv.config(); // carrega o .env se existir
 
 const payload = {
-  usuario_id: "ALUNO_ID", //  ID real
-  role: "ALUNO"
+  email: "admin@demo.local", //  ID real
+  role: "ADMIN"
 };
 
 const secret = process.env.JWT_SECRET || "sua_chave_secreta_aleatoria";
