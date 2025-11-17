@@ -144,19 +144,19 @@
           <button class="action" id="btnLoadMyMats">
             Carregar minhas matrículas
           </button>
-          <table id="tableMyMats">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Turma</th>
-                <th>Disciplina</th>
-                <th>Horário</th>
-                <th>Data</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <table id="tableMyMats">
+          <thead>
+            <tr>
+              <th>Turma</th>
+              <th>Disciplina</th>
+              <th>Dia</th>
+              <th>Turno</th>
+              <th>Data</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
         </div>
 
         <div class="card">
@@ -177,22 +177,6 @@
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
       });
-
-      function getHorarioDesc(dia, turno) {
-        const dias = {
-          1: "Domingo", 2: "Segunda-feira", 3: "Terça-feira",
-          4: "Quarta-feira", 5: "Quinta-feira", 6: "Sexta-feira", 7: "Sábado",
-        };
-        const turnos = { 1: "Manhã", 2: "Tarde", 3: "Noite" };
-        
-        const diaNum = Number(dia);
-        const turnoNum = Number(turno);
-
-        if (!dias[diaNum] || !turnos[turnoNum]) {
-          return "A definir";
-        }
-        return `${dias[diaNum]} - ${turnos[turnoNum]}`;
-      }
 
       document.querySelectorAll("#sidebar button[data-view]").forEach((b) =>
         b.addEventListener("click", () => {
@@ -279,13 +263,13 @@
           tbody.innerHTML = "";
           data.forEach(
             (m) => {
-              const parts = (m.horarioCodigo || " - ").replace('-', '').split('');
-              const horarioDesc = getHorarioDesc(parts[0], parts[1]);
-              
+              const parts = (m.horarioCodigo || 'N/D-N/D').replace(' ', '').split('-'); // Ex: '2-1'
+              const dia = parts[0];
+              const turno = parts[1];
+
               tbody.innerHTML += `<tr>
-                <td>${m.id}</td>
-                <td>${m.disciplinaNome || ""}</td>
-                <td>${horarioDesc}</td> <td>${m.created_at || m.data || ""}</td>
+                <td>${m.turmaCodigo || m.turma_id}</td> <td>${m.disciplinaNome || ""}</td>
+                <td>${dia}</td> <td>${turno}</td> <td>${m.created_at || m.data || ""}</td>
                 <td><button onclick="cancelMyMat('${
                   m.id
                 }')">Cancelar</button></td>
@@ -320,11 +304,11 @@
         sel.innerHTML = '<option value="">Selecione uma turma...</option>';
         turmas.forEach(
           (t) => {
-
-            const horarioDesc = getHorarioDesc(t.dia, t.turno);
-            const disciplinaNome = t.disciplina ? t.disciplina.nome : (t.disciplinaNome || "Disciplina desconhecida");
+            const disciplinaNome = t.disciplina ? t.disciplina.nome : (t.disciplinaNome || "N/D");
             
-            sel.innerHTML += `<option value="${t.id}">${disciplinaNome} (${horarioDesc})</option>`
+            sel.innerHTML += `<option value="${t.id}">
+              ${disciplinaNome} (Dia: ${t.dia}, Turno: ${t.turno})
+            </option>`
           }
         );
       }
@@ -380,8 +364,7 @@
             lista
               .map(
                 (t) => {
-                  const horarioDesc = getHorarioDesc(t.dia, t.turno);
-                  return `${t.codigo || t.nome} (${horarioDesc}) (${t.vagas || "?"} vagas)`
+                  return `${t.codigo || t.nome} (Dia: ${t.dia}, Turno: ${t.turno}) (${t.vagas || "?"} vagas)`
                 }
               )
               .join("\\n");

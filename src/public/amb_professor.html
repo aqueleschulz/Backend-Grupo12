@@ -169,18 +169,19 @@
             />
             <button class="action" id="btnLoadMyTurmas">Carregar</button>
           </div>
-          <table id="tableMyTurmas">
-            <thead>
-              <tr>
-                <th>Disciplina</th>
-                <th>Horário</th>
-                <th>Vagas</th>
-                <th>Matriculados</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <table id="tableMyTurmas">
+          <thead>
+            <tr>
+              <th>Disciplina</th>
+              <th>Dia</th>
+              <th>Turno</th>
+              <th>Vagas</th>
+              <th>Matriculados</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
         </div>
 
         <div class="card">
@@ -251,22 +252,6 @@
         user = null;
       }
 
-      function getHorarioDesc(dia, turno) {
-        const dias = {
-          1: "Domingo", 2: "Segunda-feira", 3: "Terça-feira",
-          4: "Quarta-feira", 5: "Quinta-feira", 6: "Sexta-feira", 7: "Sábado",
-        };
-        const turnos = { 1: "Manhã", 2: "Tarde", 3: "Noite" };
-        
-        const diaNum = Number(dia);
-        const turnoNum = Number(turno);
-
-        if (!dias[diaNum] || !turnos[turnoNum]) {
-          return "A definir";
-        }
-        return `${dias[diaNum]} - ${turnos[turnoNum]}`;
-      }
-
       async function fetchUserFromServer() {
         try {
           const res = await fetch(`${API}/usuarios/me`, {
@@ -284,7 +269,7 @@
         if (!user) await fetchUserFromServer();
         if (!user) {
           console.warn(
-            "user não encontrado no localStorage, algumas lógicas de professor podem falhar"
+            "user não encontrado no localStorage"
           );
         }
         loadDashboard();
@@ -295,6 +280,7 @@
         return document.querySelector(selector);
       }
 
+      // switch views
       document.querySelectorAll("#sidebar button[data-view]").forEach((btn) => {
         btn.addEventListener("click", () => {
           document
@@ -317,6 +303,7 @@
         window.location.href = "authentication.html";
       });
 
+      // Dashboard counts
       async function loadDashboard() {
         try {
           const allTurmas = await (
@@ -341,6 +328,7 @@
         }
       }
 
+      // CARREGAR MINHAS TURMAS
       qs("#btnLoadMyTurmas").addEventListener("click", () => loadMyTurmas());
       async function loadMyTurmas() {
         try {
@@ -370,12 +358,12 @@
           tbody.innerHTML = "";
           filtered.forEach((t) => {
             const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
-            const horarioDesc = getHorarioDesc(t.dia, t.turno);
             
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${disciplinaNome}</td>
-              <td>${horarioDesc}</td>
+              <td>${t.dia || 'N/D'}</td>
+              <td>${t.turno || 'N/D'}</td>
               <td>${t.vagas || ""}</td>
               <td>${t.matriculados || 0}</td>
               <td>
@@ -393,6 +381,7 @@
         }
       }
 
+      // View turma details
       window.viewTurma = async (id) => {
         try {
           const res = await fetch(`${API}/turmas/${id}`, {
@@ -402,13 +391,13 @@
           const t = await res.json();
 
           const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
-          const horarioDesc = getHorarioDesc(t.dia, t.turno);
 
           let html = `<p><strong>Disciplina:</strong> ${disciplinaNome}</p>
-                      <p><strong>Horário:</strong> ${horarioDesc}</p>`;
+                      <p><strong>Dia:</strong> ${t.dia}</p>
+                      <p><strong>Turno:</strong> ${t.turno}</p>`;
           
           const mats = await (
-            await fetch(`${API}/admin/matriculas`, {
+            await fetch(`${API}/admin/matriculas`, { 
               headers: { Authorization: "Bearer " + token },
             })
           )
@@ -444,11 +433,13 @@
         }
       };
 
+      // fechar modal
       qs("#closeModal").addEventListener("click", () => {
         qs("#modal").style.display = "none";
         qs("#modalContent").innerHTML = "";
       });
 
+      // EDITAR TURMA
       window.editTurma = async (id) => {
         try {
           const res = await fetch(`${API}/turmas/${id}`, {
@@ -462,7 +453,6 @@
           document.getElementById("turmaVagas").value = t.vagas || "";
           
           await loadDisciplinesForSelect();
-
           document.getElementById("selDiscForTurma").value = t.disciplina ? t.disciplina.id : (t.disciplinaId || "");
           
           document.getElementById("turmaDia").value = t.dia || "";
@@ -477,6 +467,7 @@
         }
       };
 
+      // DELETE TURMA
       window.deleteTurma = async (id) => {
         if (!confirm("Excluir turma?")) return;
         const res = await fetch(`${API}/turmas/${id}`, {
@@ -492,6 +483,7 @@
         }
       };
 
+      // Carrega disciplinas para select
       async function loadDisciplinesForSelect() {
         try {
           const res = await fetch(`${API}/disciplinas`, {
@@ -511,6 +503,7 @@
         }
       }
 
+      // SALVAR TURMA (CREATE or UPDATE)
       qs("#btnSaveTurma").addEventListener("click", async () => {
         try {
           const id = document.getElementById("turmaIdEdit").value || null;

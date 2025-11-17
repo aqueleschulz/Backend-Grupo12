@@ -4,12 +4,20 @@ import { createAppError } from "../errors/AppError.js";
 class TurmaController {
   async create(req, res) {
     const { codigo, vagas, dia, turno, disciplinaId, professorId } = req.body ?? {};
-    // converter vagas no controller para detectar erros rapidamente
     const vagasValue = vagas === "" || vagas === undefined || vagas === null ? null : Number(vagas);
     if (vagas !== null && vagas !== "" && Number.isNaN(vagasValue)) {
       return res.status(400).json({ error: "vagas deve ser um número ou vazio." });
     }
-    const turma = await TurmaService.criar({ codigo, vagas: vagasValue, dia, turno, disciplinaId, professorId });
+
+    const turma = await TurmaService.criar({ 
+      codigo, 
+      vagas: vagasValue, 
+      dia, 
+      turno, 
+      disciplinaId, 
+      professorId,
+      usuarioId: req.user 
+    });
     return res.status(201).json(turma);
   }
 
@@ -20,7 +28,16 @@ class TurmaController {
     if (vagas !== null && vagas !== "" && Number.isNaN(vagasValue)) {
       return res.status(400).json({ error: "vagas deve ser um número ou vazio." });
     }
-    const turma = await TurmaService.atualizar(id, { codigo, vagas: vagasValue, dia, turno, disciplinaId, professorId });
+    
+    const turma = await TurmaService.atualizar(id, { 
+      codigo, 
+      vagas: vagasValue, 
+      dia, 
+      turno, 
+      disciplinaId, 
+      professorId,
+      usuarioId: req.user
+    });
     return res.status(200).json(turma);
   }
 
@@ -38,7 +55,9 @@ class TurmaController {
 
   async delete(req, res) {
     const { id } = req.params;
-    await TurmaService.excluir(id);
+
+    await TurmaService.excluir(id, req.user);
+    
     return res.status(204).send();
   }
 }

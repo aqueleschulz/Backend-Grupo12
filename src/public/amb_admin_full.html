@@ -291,7 +291,8 @@
           <table id="tableTurmas">
             <thead>
               <tr>
-                <th>Horário</th>
+                <th>Dia</th>
+                <th>Turno</th>
                 <th>Disciplina</th>
                 <th>Professor</th>
                 <th>Vagas/Matric.</th>
@@ -322,7 +323,8 @@
               <tr>
                 <th>Aluno</th>
                 <th>Disciplina</th>
-                <th>Horário</th>
+                <th>Dia</th>
+                <th>Turno</th>
                 <th>Data</th>
                 <th>Ações</th>
               </tr>
@@ -378,6 +380,7 @@
     </div>
 
     <script>
+
       const API = "http://localhost:3000/api";
       const token = localStorage.getItem("token");
       if (!token) window.location.href = "authentication.html";
@@ -385,21 +388,7 @@
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
       });
-      function getHorarioDesc(dia, turno) {
-        const dias = {
-          1: "Domingo", 2: "Segunda-feira", 3: "Terça-feira",
-          4: "Quarta-feira", 5: "Quinta-feira", 6: "Sexta-feira", 7: "Sábado",
-        };
-        const turnos = { 1: "Manhã", 2: "Tarde", 3: "Noite" };
-        
-        const diaNum = Number(dia);
-        const turnoNum = Number(turno);
 
-        if (!dias[diaNum] || !turnos[turnoNum]) {
-          return "A definir";
-        }
-        return `${dias[diaNum]} - ${turnos[turnoNum]}`;
-      }
 
       async function fetchWithPagination(path, page = 1, limit = 10) {
         const tryUrl = `${API}${path}?page=${page}&limit=${limit}`;
@@ -422,6 +411,7 @@
         }
       }
 
+      /* --- UI: trocar views --- */
       document.querySelectorAll("#sidebar button[data-view]").forEach((btn) => {
         btn.addEventListener("click", () => {
           document
@@ -440,11 +430,13 @@
         });
       });
 
+      /* LOGOUT */
       document.getElementById("logoutBtn").addEventListener("click", () => {
         localStorage.removeItem("token");
         window.location.href = "authentication.html";
       });
 
+      /* --- DASHBOARD (contadores) --- */
       async function loadDashboard() {
         try {
           const usuarios = await (
@@ -476,6 +468,7 @@
       }
       loadDashboard();
 
+      /* --- USUÁRIOS (CRUD) --- */
       let usersPage = 1,
         usersLimit = 10;
       async function loadUsers(page = 1) {
@@ -612,6 +605,7 @@
         openModal("edit", u);
       };
 
+      /* --- DISCIPLINAS (CRUD) --- */
       let discsPage = 1,
         discsLimit = 10;
       async function loadDisciplinas(page = 1) {
@@ -693,6 +687,7 @@
         } else alert("Erro");
       }
 
+      /* --- TURMAS (CRUD) --- */
       let turmasPage = 1,
         turmasLimit = 10;
       async function loadTurmas(page = 1) {
@@ -741,13 +736,13 @@
           const tbody = document.querySelector("#tableTurmas tbody");
           tbody.innerHTML = "";
           items.forEach((t) => {
-            const horarioDesc = getHorarioDesc(t.dia, t.turno);
             const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
             const professorNome = t.professor ? t.professor.nome : "N/A";
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
-              <td>${horarioDesc}</td>
+              <td>${t.dia || 'N/D'}</td>
+              <td>${t.turno || 'N/D'}</td>
               <td>${disciplinaNome}</td>
               <td>${professorNome}</td>
               <td>${t.vagas || "N/A"} (${t.matriculados || 0})</td>
@@ -776,9 +771,9 @@
               "T" + Math.random().toString(36).slice(2, 8).toUpperCase();
             const vagas =
               Number(document.getElementById("turmaVagas").value) || 0;
-
+            
             const dia = document.getElementById("turmaDia").value;
-            const turno = document.getElementById("turmaTurno").value;
+            const turno = document.getElementById("turmaTurno") ? document.getElementById("turmaTurno").value : ''; 
             
             const disciplinaId =
               document.getElementById("selDiscForTurma").value;
@@ -829,6 +824,7 @@
         } else alert("Erro");
       }
 
+      /* --- MATRICULAS (admin) --- */
       let matsPage = 1,
         matsLimit = 10;
       async function loadMatrículas(page = 1) {
@@ -852,9 +848,10 @@
           selT.innerHTML = "";
           turmas.forEach(
             (t) => {
-              const horarioDesc = getHorarioDesc(t.dia, t.turno);
               const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
-              selT.innerHTML += `<option value="${t.id}">${disciplinaNome} (${horarioDesc})</option>`
+              selT.innerHTML += `<option value="${t.id}">
+                ${disciplinaNome} (Dia: ${t.dia}, Turno: ${t.turno})
+              </option>`
             }
           );
 
@@ -877,14 +874,16 @@
           const tbody = document.querySelector("#tableMat tbody");
           tbody.innerHTML = "";
           items.forEach((m) => {
-            const parts = (m.horario_codigo || " - ").replace('-', '').split('');
-            const horarioDesc = getHorarioDesc(parts[0], parts[1]);
+            const parts = (m.horario_codigo || 'N/D-N/D').replace(' ', '').split('-'); // Ex: '2-1'
+            const dia = parts[0];
+            const turno = parts[1];
             
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${m.alunoNome || m.aluno || m.aluno_id}</td>
               <td>${m.disciplina_nome || "N/A"}</td>
-              <td>${horarioDesc}</td>
+              <td>${dia}</td>
+              <td>${turno}</td>
               <td>${m.created_at || m.data || ""}</td>
               <td><button onclick="deleteMat('${m.id}')">Cancelar</button></td>`;
             tbody.appendChild(tr);
@@ -937,8 +936,8 @@
         } else alert("Erro");
       }
 
+      /* --- RENDER PAGINATION (simples) --- */
       function renderPagination(containerId, total, page, limit, onPage) {
-      
         const container = document.getElementById(containerId);
         container.innerHTML = "";
         const pages = Math.max(1, Math.ceil(total / limit));
@@ -959,6 +958,7 @@
         container.appendChild(next);
       }
 
+      /* --- Inicializações --- */
       loadDashboard();
     </script>
   </body>
