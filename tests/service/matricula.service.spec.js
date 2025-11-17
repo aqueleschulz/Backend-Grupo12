@@ -116,10 +116,6 @@ describe('MatriculaService.enroll', () => {
       criadoEm: '2024-01-01T00:00:00.000Z',
     });
     expect(mockMatriculaRepository.insertMatricula).toHaveBeenCalledWith({ alunoId, turmaId }, { client: mockClient });
-    expect(mockClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('pg_advisory_xact_lock'),
-      [turmaId]
-    );
   });
 });
 

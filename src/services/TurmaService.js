@@ -82,12 +82,7 @@ class TurmaService {
   async buscarPorId(id) {
     const turmaDb = await TurmaRepository.findById(id);
     if (!turmaDb) throw createAppError("TURMA_INEXISTENTE");
-
-    const turmasFormatadas = await this.listar();
-    const turma = turmasFormatadas.find(t => t.id === id);
-    
-    if (!turma) throw createAppError("TURMA_INEXISTENTE");
-    return turma;
+    return formatarRespostaTurma(turmaDb);
   }
 
   async criar(data) {
