@@ -172,10 +172,10 @@
           <table id="tableMyTurmas">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Código</th>
                 <th>Disciplina</th>
+                <th>Horário</th>
                 <th>Vagas</th>
+                <th>Matriculados</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -230,7 +230,6 @@
       </div>
     </div>
 
-    <!-- modal para lista de alunos -->
     <div id="modal" class="modal">
       <div class="box">
         <h3>Alunos matriculados</h3>
@@ -252,8 +251,23 @@
         user = null;
       }
 
+      function getHorarioDesc(dia, turno) {
+        const dias = {
+          1: "Domingo", 2: "Segunda-feira", 3: "Terça-feira",
+          4: "Quarta-feira", 5: "Quinta-feira", 6: "Sexta-feira", 7: "Sábado",
+        };
+        const turnos = { 1: "Manhã", 2: "Tarde", 3: "Noite" };
+        
+        const diaNum = Number(dia);
+        const turnoNum = Number(turno);
+
+        if (!dias[diaNum] || !turnos[turnoNum]) {
+          return "A definir";
+        }
+        return `${dias[diaNum]} - ${turnos[turnoNum]}`;
+      }
+
       async function fetchUserFromServer() {
-        // opcional: caso o frontend não tenha salvo o objeto 'user'
         try {
           const res = await fetch(`${API}/usuarios/me`, {
             headers: { Authorization: "Bearer " + token },
@@ -263,16 +277,14 @@
             localStorage.setItem("user", JSON.stringify(user));
             return;
           }
-        } catch (e) {
-          /* ignore */
-        }
+        } catch (e) { }
       }
 
       (async () => {
         if (!user) await fetchUserFromServer();
         if (!user) {
-          /* não temos user, mas continuamos */ console.warn(
-            "user não encontrado no localStorage"
+          console.warn(
+            "user não encontrado no localStorage, algumas lógicas de professor podem falhar"
           );
         }
         loadDashboard();
@@ -283,7 +295,6 @@
         return document.querySelector(selector);
       }
 
-      // switch views
       document.querySelectorAll("#sidebar button[data-view]").forEach((btn) => {
         btn.addEventListener("click", () => {
           document
@@ -306,7 +317,6 @@
         window.location.href = "authentication.html";
       });
 
-      // Dashboard counts
       async function loadDashboard() {
         try {
           const allTurmas = await (
@@ -317,36 +327,20 @@
           let myId = user?.id || null;
           const myTurmas = myId
             ? allTurmas.filter(
-                (t) =>
-                  t.professorId == myId ||
-                  t.professor == myId ||
-                  (t.professor && t.professor.id == myId)
+                (t) => t.professor && t.professor.id == myId
               )
             : allTurmas;
           document.getElementById("countMyTurmas").textContent =
             myTurmas.length;
-          // count students total across my turmas (best effort)
-          const mats = await (
-            await fetch(`${API}/admin/matriculas`, {
-              headers: { Authorization: "Bearer " + token },
-            })
-          )
-            .json()
-            .catch(() => []);
-          let myStudentsCount = 0;
-          if (Array.isArray(mats) && myId) {
-            myStudentsCount = mats.filter((m) =>
-              myTurmas.some((t) => t.id == m.turma_id || t.id == m.turmaId)
-            ).length;
-          }
-          document.getElementById("countMyAlunos").textContent =
-            myStudentsCount;
+          
+          const totalMatriculados = myTurmas.reduce((sum, t) => sum + (Number(t.matriculados) || 0), 0);
+          document.getElementById("countMyAlunos").textContent = totalMatriculados;
+            
         } catch (e) {
           console.error("dashboard", e);
         }
       }
 
-      // CARREGAR MINHAS TURMAS
       qs("#btnLoadMyTurmas").addEventListener("click", () => loadMyTurmas());
       async function loadMyTurmas() {
         try {
@@ -357,37 +351,38 @@
           if (!res.ok) throw new Error("Erro turmas");
           const turmas = await res.json();
           let myId = user?.id || null;
+          
           const mine = myId
             ? turmas.filter(
-                (t) =>
-                  t.professorId == myId ||
-                  t.professor == myId ||
-                  (t.professor &&
-                    (t.professor.id == myId ||
-                      ("" + t.professor)
-                        .toLowerCase()
-                        .includes(("" + myId).toLowerCase())))
+                (t) => t.professor && t.professor.id == myId
               )
             : turmas;
+            
           const filtered = q
             ? mine.filter(
                 (t) =>
                   (t.codigo || "").toLowerCase().includes(q) ||
-                  (t.nome || "").toLowerCase().includes(q)
+                  (t.disciplina && t.disciplina.nome.toLowerCase().includes(q))
               )
             : mine;
+            
           const tbody = qs("#tableMyTurmas tbody");
           tbody.innerHTML = "";
           filtered.forEach((t) => {
+            const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
+            const horarioDesc = getHorarioDesc(t.dia, t.turno);
+            
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${t.id}</td><td>${t.codigo || ""}</td><td>${
-              t.disciplinaNome || t.disciplina || ""
-            }</td><td>${t.vagas || ""}</td>
-        <td>
-          <button onclick="viewTurma('${t.id}')">Ver alunos</button>
-          <button onclick="editTurma('${t.id}')">Editar</button>
-          <button onclick="deleteTurma('${t.id}')">Excluir</button>
-        </td>`;
+            tr.innerHTML = `
+              <td>${disciplinaNome}</td>
+              <td>${horarioDesc}</td>
+              <td>${t.vagas || ""}</td>
+              <td>${t.matriculados || 0}</td>
+              <td>
+                <button onclick="viewTurma('${t.id}')">Ver alunos</button>
+                <button onclick="editTurma('${t.id}')">Editar</button>
+                <button onclick="deleteTurma('${t.id}')">Excluir</button>
+              </td>`;
             tbody.appendChild(tr);
           });
           document.getElementById("countMyTurmas").textContent =
@@ -398,7 +393,6 @@
         }
       }
 
-      // View turma details (inclui listar alunos se API fornecer)
       window.viewTurma = async (id) => {
         try {
           const res = await fetch(`${API}/turmas/${id}`, {
@@ -406,62 +400,55 @@
           });
           if (!res.ok) throw new Error("Erro turma");
           const t = await res.json();
-          // montar lista de alunos se houver
-          let html = `<p><strong>Código:</strong> ${
-            t.codigo || ""
-          } — <strong>Disciplina:</strong> ${
-            t.disciplinaNome || t.disciplina || ""
-          }</p>`;
-          if (t.alunos && Array.isArray(t.alunos)) {
+
+          const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
+          const horarioDesc = getHorarioDesc(t.dia, t.turno);
+
+          let html = `<p><strong>Disciplina:</strong> ${disciplinaNome}</p>
+                      <p><strong>Horário:</strong> ${horarioDesc}</p>`;
+          
+          const mats = await (
+            await fetch(`${API}/admin/matriculas`, {
+              headers: { Authorization: "Bearer " + token },
+            })
+          )
+            .json()
+            .catch(() => []);
+            
+          const related = mats.filter(
+            (m) => m.turma_id == id || m.turmaId == id
+          );
+          
+          if (related.length) {
             html +=
-              "<table><thead><tr><th>ID</th><th>Nome</th><th>Email</th></tr></thead><tbody>";
-            t.alunos.forEach(
-              (a) =>
-                (html += `<tr><td>${a.id}</td><td>${a.nome}</td><td>${a.email}</td></tr>`)
+              "<table><thead><tr><th>ID Aluno</th><th>Nome Aluno</th><th>Data Matrícula</th></tr></thead><tbody>";
+            related.forEach(
+              (m) =>
+                (html += `<tr>
+                  <td>${m.aluno_id || m.alunoId}</td>
+                  <td>${m.alunoNome || m.aluno || "N/A"}</td>
+                  <td>${m.created_at || m.data || ""}</td>
+                </tr>`)
             );
             html += "</tbody></table>";
-          } else {
-            // tentar buscar matrículas relacionadas
-            const mats = await (
-              await fetch(`${API}/admin/matriculas`, {
-                headers: { Authorization: "Bearer " + token },
-              })
-            )
-              .json()
-              .catch(() => []);
-            const related = mats.filter(
-              (m) => m.turma_id == id || m.turmaId == id
-            );
-            if (related.length) {
-              html +=
-                "<table><thead><tr><th>ID</th><th>Aluno</th><th>Matricula</th></tr></thead><tbody>";
-              related.forEach(
-                (m) =>
-                  (html += `<tr><td>${m.aluno_id || m.alunoId}</td><td>${
-                    m.alunoNome || m.aluno || ""
-                  }</td><td>${m.id}</td></tr>`)
-              );
-              html += "</tbody></table>";
-            } else
-              html +=
-                '<p class="muted">Nenhum aluno disponível na resposta da API.</p>';
-          }
+          } else
+            html +=
+              '<p class="muted">Nenhum aluno matriculado nesta turma.</p>';
+          
           qs("#turmaDetails").innerHTML = html;
           qs("#modalContent").innerHTML = html;
           qs("#modal").style.display = "flex";
         } catch (e) {
           console.error(e);
-          alert("Erro ao obter detalhes");
+          alert("Erro ao obter detalhes: " + e.message);
         }
       };
 
-      // fechar modal
       qs("#closeModal").addEventListener("click", () => {
         qs("#modal").style.display = "none";
         qs("#modalContent").innerHTML = "";
       });
 
-      // EDITAR TURMA
       window.editTurma = async (id) => {
         try {
           const res = await fetch(`${API}/turmas/${id}`, {
@@ -469,34 +456,27 @@
           });
           if (!res.ok) throw new Error("Erro ao obter turma");
           const t = await res.json();
-          // preencher o form de criar/editar
+          
           document.getElementById("turmaIdEdit").value = t.id;
           document.getElementById("turmaCodigo").value = t.codigo || "";
           document.getElementById("turmaVagas").value = t.vagas || "";
+          
+          await loadDisciplinesForSelect();
+
+          document.getElementById("selDiscForTurma").value = t.disciplina ? t.disciplina.id : (t.disciplinaId || "");
+          
           document.getElementById("turmaDia").value = t.dia || "";
           document.getElementById("turmaTurno").value = t.turno || "";
-          // selecionar disciplina (carrega selects primeiro)
-          await loadDisciplinesForSelect();
-          document.getElementById("selDiscForTurma").value =
-            t.disciplinaId || t.disciplina_id || "";
-          // ir para view criar
-          document
-            .querySelectorAll("#sidebar button")
-            .forEach((x) => x.classList.remove("active"));
+          
           document
             .querySelector('#sidebar button[data-view="criar-turma"]')
-            .classList.add("active");
-          document
-            .querySelectorAll(".view")
-            .forEach((v) => (v.style.display = "none"));
-          document.getElementById("view-criar-turma").style.display = "block";
+            .click();
         } catch (e) {
           console.error(e);
           alert("Erro ao editar");
         }
       };
 
-      // DELETE TURMA
       window.deleteTurma = async (id) => {
         if (!confirm("Excluir turma?")) return;
         const res = await fetch(`${API}/turmas/${id}`, {
@@ -512,7 +492,6 @@
         }
       };
 
-      // Carrega disciplinas para select
       async function loadDisciplinesForSelect() {
         try {
           const res = await fetch(`${API}/disciplinas`, {
@@ -521,10 +500,10 @@
           if (!res.ok) throw new Error("Erro disciplinas");
           const discs = await res.json();
           const sel = qs("#selDiscForTurma");
-          sel.innerHTML = '<option value="">Selecione...</option>';
+          sel.innerHTML = '<option value="">Selecione a disciplina...</option>';
           discs.forEach(
             (d) =>
-              (sel.innerHTML += `<option value="${d.id}">${d.nome}</option>`)
+              (sel.innerHTML += `<option value="${d.id}">${d.nome} (${d.codigo || ''})</option>`)
           );
         } catch (e) {
           console.error(e);
@@ -532,25 +511,27 @@
         }
       }
 
-      // SALVAR TURMA (CREATE or UPDATE)
       qs("#btnSaveTurma").addEventListener("click", async () => {
         try {
           const id = document.getElementById("turmaIdEdit").value || null;
-          const codigo = document.getElementById("turmaCodigo").value || null;
+          const codigo = document.getElementById("turmaCodigo").value || "TURMA-" + Date.now().toString().slice(-4);
           const vagas =
             Number(document.getElementById("turmaVagas").value) || 0;
-          const dia = document.getElementById("turmaDia").value || "";
-          const turno = document.getElementById("turmaTurno").value || "";
+          const dia = document.getElementById("turmaDia").value;
+          const turno = document.getElementById("turmaTurno").value;
           const disciplinaId = document.getElementById("selDiscForTurma").value;
-          if (!disciplinaId) return alert("Escolha disciplina");
+          
+          if (!disciplinaId || !dia || !turno) return alert("Disciplina, Dia e Turno são obrigatórios");
+          
           const body = {
             codigo,
             vagas,
-            dia,
-            turno,
+            dia: Number(dia),
+            turno: Number(turno),
             disciplinaId,
             professorId: user?.id,
           };
+          
           let res;
           if (id) {
             res = await fetch(`${API}/turmas/${id}`, {
@@ -571,7 +552,11 @@
               body: JSON.stringify(body),
             });
           }
-          if (!res.ok) throw new Error("Erro salvar");
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error("Erro ao salvar: " + (err?.error?.message || res.statusText));
+          }
+          
           alert("Salvo com sucesso");
           document.getElementById("turmaIdEdit").value = "";
           document.getElementById("turmaCodigo").value = "";

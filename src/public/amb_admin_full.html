@@ -291,11 +291,10 @@
           <table id="tableTurmas">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Código</th>
+                <th>Horário</th>
                 <th>Disciplina</th>
                 <th>Professor</th>
-                <th>Vagas</th>
+                <th>Vagas/Matric.</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -321,9 +320,9 @@
           <table id="tableMat">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Aluno</th>
-                <th>Turma</th>
+                <th>Disciplina</th>
+                <th>Horário</th>
                 <th>Data</th>
                 <th>Ações</th>
               </tr>
@@ -379,7 +378,6 @@
     </div>
 
     <script>
-      /* --- Config --- */
       const API = "http://localhost:3000/api";
       const token = localStorage.getItem("token");
       if (!token) window.location.href = "authentication.html";
@@ -387,19 +385,30 @@
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
       });
+      function getHorarioDesc(dia, turno) {
+        const dias = {
+          1: "Domingo", 2: "Segunda-feira", 3: "Terça-feira",
+          4: "Quarta-feira", 5: "Quinta-feira", 6: "Sexta-feira", 7: "Sábado",
+        };
+        const turnos = { 1: "Manhã", 2: "Tarde", 3: "Noite" };
+        
+        const diaNum = Number(dia);
+        const turnoNum = Number(turno);
 
-      /* --- Util: tentativa de paginação server-side, fallback client-side --- */
+        if (!dias[diaNum] || !turnos[turnoNum]) {
+          return "A definir";
+        }
+        return `${dias[diaNum]} - ${turnos[turnoNum]}`;
+      }
+
       async function fetchWithPagination(path, page = 1, limit = 10) {
-        // tenta /resource?page=..&limit=..
         const tryUrl = `${API}${path}?page=${page}&limit=${limit}`;
         try {
           const res = await fetch(tryUrl, { headers: headersAuth() });
           if (res.ok) return await res.json();
-          // se não OK, tenta sem paginação
           const res2 = await fetch(`${API}${path}`, { headers: headersAuth() });
           if (!res2.ok) throw new Error("Erro ao buscar " + path);
           const all = await res2.json();
-          // page/calc
           const start = (page - 1) * limit;
           return {
             items: all.slice(start, start + limit),
@@ -413,7 +422,6 @@
         }
       }
 
-      /* --- UI: trocar views --- */
       document.querySelectorAll("#sidebar button[data-view]").forEach((btn) => {
         btn.addEventListener("click", () => {
           document
@@ -425,7 +433,6 @@
             .querySelectorAll(".view")
             .forEach((v) => (v.style.display = "none"));
           document.getElementById("view-" + view).style.display = "block";
-          // carregar dados ao mudar de view
           if (view === "usuarios") loadUsers(1);
           if (view === "disciplinas") loadDisciplinas(1);
           if (view === "turmas") loadTurmas(1);
@@ -433,13 +440,11 @@
         });
       });
 
-      /* LOGOUT */
       document.getElementById("logoutBtn").addEventListener("click", () => {
         localStorage.removeItem("token");
         window.location.href = "authentication.html";
       });
 
-      /* --- DASHBOARD (contadores) --- */
       async function loadDashboard() {
         try {
           const usuarios = await (
@@ -471,13 +476,11 @@
       }
       loadDashboard();
 
-      /* --- USUÁRIOS (CRUD) --- */
       let usersPage = 1,
         usersLimit = 10;
       async function loadUsers(page = 1) {
         usersPage = page;
         try {
-          // tenta server-side
           const res = await fetch(
             `${API}/usuarios?page=${page}&limit=${usersLimit}`,
             { headers: headersAuth() }
@@ -485,7 +488,6 @@
           let items, total;
           if (res.ok) {
             const json = await res.json();
-            // possibilidade resposta { items: [...], total: N }
             if (Array.isArray(json)) {
               items = json;
               total = json.length;
@@ -494,7 +496,6 @@
               total = json.total || items.length;
             }
           } else {
-            // fallback: buscar tudo e paginar client-side
             const all = await (
               await fetch(`${API}/usuarios`, { headers: headersAuth() })
             ).json();
@@ -514,7 +515,6 @@
           alert("Erro carregando usuários");
         }
       }
-
       function renderUsers(list) {
         const tbody = document.querySelector("#tableUsers tbody");
         tbody.innerHTML = "";
@@ -530,17 +530,13 @@
           tbody.appendChild(tr);
         });
       }
-
       document
         .getElementById("btnNewUser")
         .addEventListener("click", () => openModal("create"));
-
-      /* Modal create/edit */
       const modal = document.getElementById("modal");
       document
         .getElementById("modalClose")
         .addEventListener("click", () => (modal.style.display = "none"));
-
       let modalMode = "create",
         modalEditId = null;
       function openModal(mode, user = {}) {
@@ -555,7 +551,6 @@
           (user.roles && user.roles[0]) || "ALUNO";
         modal.style.display = "flex";
       }
-
       document
         .getElementById("modalSave")
         .addEventListener("click", async () => {
@@ -569,7 +564,6 @@
           }
           try {
             if (modalMode === "create") {
-              // POST /api/usuarios
               const res = await fetch(`${API}/usuarios`, {
                 method: "POST",
                 headers: headersAuth(),
@@ -578,7 +572,6 @@
               if (!res.ok) throw new Error("Erro criando usuário");
               alert("Usuário criado");
             } else {
-              // PUT /api/usuarios/:id
               const res = await fetch(`${API}/usuarios/${modalEditId}`, {
                 method: "PUT",
                 headers: headersAuth(),
@@ -600,8 +593,6 @@
             alert(e.message);
           }
         });
-
-      /* delete user */
       async function deleteUser(id) {
         if (!confirm("Excluir usuário?")) return;
         const res = await fetch(`${API}/usuarios/${id}`, {
@@ -615,14 +606,12 @@
         } else alert("Erro ao excluir");
       }
       window.editUser = async (id) => {
-        // obter dados do usuário
         const u = await (
           await fetch(`${API}/usuarios/${id}`, { headers: headersAuth() })
         ).json();
         openModal("edit", u);
       };
 
-      /* --- DISCIPLINAS (CRUD) --- */
       let discsPage = 1,
         discsLimit = 10;
       async function loadDisciplinas(page = 1) {
@@ -657,7 +646,6 @@
           alert("Erro disciplinas");
         }
       }
-
       function renderDiscs(list) {
         const tbody = document.querySelector("#tableDisciplinas tbody");
         tbody.innerHTML = "";
@@ -677,7 +665,6 @@
           if (!nome) return alert("Nome obrigatório");
           try {
             const body = { nome };
-            // cria com código gerado pelo backend (ou se precisar, geramos aqui)
             const res = await fetch(`${API}/disciplinas`, {
               method: "POST",
               headers: headersAuth(),
@@ -693,7 +680,6 @@
             alert(e.message);
           }
         });
-
       async function deleteDisc(id) {
         if (!confirm("Excluir disciplina?")) return;
         const res = await fetch(`${API}/disciplinas/${id}`, {
@@ -707,13 +693,11 @@
         } else alert("Erro");
       }
 
-      /* --- TURMAS (CRUD) --- */
       let turmasPage = 1,
         turmasLimit = 10;
       async function loadTurmas(page = 1) {
         turmasPage = page;
         try {
-          // popular selects de disciplinas e professores
           const [discs, profs] = await Promise.all([
             (
               await fetch(`${API}/disciplinas`, { headers: headersAuth() })
@@ -737,7 +721,6 @@
               (selP.innerHTML += `<option value="${p.id}">${p.nome}</option>`)
           );
 
-          // tentar paginação
           const res = await fetch(
             `${API}/turmas?page=${page}&limit=${turmasLimit}`,
             { headers: headersAuth() }
@@ -754,17 +737,21 @@
             total = all.length;
             items = all.slice((page - 1) * turmasLimit, page * turmasLimit);
           }
-          // render
+          
           const tbody = document.querySelector("#tableTurmas tbody");
           tbody.innerHTML = "";
           items.forEach((t) => {
+            const horarioDesc = getHorarioDesc(t.dia, t.turno);
+            const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
+            const professorNome = t.professor ? t.professor.nome : "N/A";
+
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${t.id}</td><td>${t.codigo || ""}</td><td>${
-              t.disciplinaNome || t.disciplina || ""
-            }</td><td>${t.professorNome || t.professor || ""}</td><td>${
-              t.vagas || ""
-            }</td>
-        <td><button onclick="deleteTurma('${t.id}')">Excluir</button></td>`;
+            tr.innerHTML = `
+              <td>${horarioDesc}</td>
+              <td>${disciplinaNome}</td>
+              <td>${professorNome}</td>
+              <td>${t.vagas || "N/A"} (${t.matriculados || 0})</td>
+              <td><button onclick="deleteTurma('${t.id}')">Excluir</button></td>`;
             tbody.appendChild(tr);
           });
           renderPagination(
@@ -789,18 +776,23 @@
               "T" + Math.random().toString(36).slice(2, 8).toUpperCase();
             const vagas =
               Number(document.getElementById("turmaVagas").value) || 0;
-            const dia = document.getElementById("turmaDia").value || "";
+
+            const dia = document.getElementById("turmaDia").value;
+            const turno = document.getElementById("turmaTurno").value;
+            
             const disciplinaId =
               document.getElementById("selDiscForTurma").value;
             const professorId =
               document.getElementById("selProfForTurma").value;
-            if (!disciplinaId || !professorId)
-              return alert("Escolha disciplina e professor");
+              
+            if (!disciplinaId || !professorId || !dia || !turno)
+              return alert("Escolha disciplina, professor, dia e turno");
+              
             const body = {
               codigo,
               vagas,
-              dia,
-              turno: turmaTurno.value,
+              dia: Number(dia),
+              turno: Number(turno),
               disciplinaId,
               professorId,
             };
@@ -814,6 +806,8 @@
             document.getElementById("turmaCodigo").value = "";
             document.getElementById("turmaVagas").value = "";
             document.getElementById("turmaDia").value = "";
+            if(document.getElementById("turmaTurno")) document.getElementById("turmaTurno").value = "";
+
             loadTurmas(turmasPage);
             loadDashboard();
           } catch (e) {
@@ -835,13 +829,11 @@
         } else alert("Erro");
       }
 
-      /* --- MATRICULAS (admin) --- */
       let matsPage = 1,
         matsLimit = 10;
       async function loadMatrículas(page = 1) {
         matsPage = page;
         try {
-          // preencher selects de criação
           const [alunos, turmas] = await Promise.all([
             (
               await fetch(`${API}/usuarios?role=ALUNO`, {
@@ -859,13 +851,13 @@
           );
           selT.innerHTML = "";
           turmas.forEach(
-            (t) =>
-              (selT.innerHTML += `<option value="${t.id}">${
-                t.nome || t.codigo
-              }</option>`)
+            (t) => {
+              const horarioDesc = getHorarioDesc(t.dia, t.turno);
+              const disciplinaNome = t.disciplina ? t.disciplina.nome : "N/A";
+              selT.innerHTML += `<option value="${t.id}">${disciplinaNome} (${horarioDesc})</option>`
+            }
           );
 
-          // listar matrículas admin
           const res = await fetch(
             `${API}/admin/matriculas?page=${page}&limit=${matsLimit}`,
             { headers: headersAuth() }
@@ -885,13 +877,16 @@
           const tbody = document.querySelector("#tableMat tbody");
           tbody.innerHTML = "";
           items.forEach((m) => {
+            const parts = (m.horario_codigo || " - ").replace('-', '').split('');
+            const horarioDesc = getHorarioDesc(parts[0], parts[1]);
+            
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${m.id}</td><td>${
-              m.alunoNome || m.aluno || m.aluno_id
-            }</td><td>${m.turmaNome || m.turma || m.turma_id}</td><td>${
-              m.created_at || m.data || ""
-            }</td>
-        <td><button onclick="deleteMat('${m.id}')">Cancelar</button></td>`;
+            tr.innerHTML = `
+              <td>${m.alunoNome || m.aluno || m.aluno_id}</td>
+              <td>${m.disciplina_nome || "N/A"}</td>
+              <td>${horarioDesc}</td>
+              <td>${m.created_at || m.data || ""}</td>
+              <td><button onclick="deleteMat('${m.id}')">Cancelar</button></td>`;
             tbody.appendChild(tr);
           });
           renderPagination(
@@ -914,7 +909,6 @@
             const alunoId = document.getElementById("selAlunoForMat").value;
             const turmaId = document.getElementById("selTurmaForMat").value;
             if (!alunoId || !turmaId) return alert("Escolha aluno e turma");
-            // chama endpoint admin (precisa existir): POST /api/admin/matriculas
             const res = await fetch(`${API}/admin/matriculas`, {
               method: "POST",
               headers: headersAuth(),
@@ -932,7 +926,6 @@
 
       async function deleteMat(id) {
         if (!confirm("Cancelar matrícula?")) return;
-        // admin delete: DELETE /api/admin/matriculas/:id
         const res = await fetch(`${API}/admin/matriculas/${id}`, {
           method: "DELETE",
           headers: headersAuth(),
@@ -944,8 +937,8 @@
         } else alert("Erro");
       }
 
-      /* --- RENDER PAGINATION (simples) --- */
       function renderPagination(containerId, total, page, limit, onPage) {
+      
         const container = document.getElementById(containerId);
         container.innerHTML = "";
         const pages = Math.max(1, Math.ceil(total / limit));
@@ -966,9 +959,7 @@
         container.appendChild(next);
       }
 
-      /* --- Inicializações --- */
       loadDashboard();
-      // carregará as views on demand
     </script>
   </body>
 </html>

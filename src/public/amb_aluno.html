@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Painel Aluno</title>
     <style>
-      /* (Seu CSS original permanece aqui, sem alterações) */
       * {
         box-sizing: border-box;
         margin: 0;
@@ -179,24 +178,13 @@
         Authorization: "Bearer " + token,
       });
 
-      /**
-       * ALTERAÇÃO 3: Helper para traduzir Dia/Turno.
-       * Esta função espelha a lógica do seu backend (Horario.js)
-       * para que o front-end possa mostrar a "verdade" do sistema.
-       */
       function getHorarioDesc(dia, turno) {
         const dias = {
-          1: "Domingo",
-          2: "Segunda-feira",
-          3: "Terça-feira",
-          4: "Quarta-feira",
-          5: "Quinta-feira",
-          6: "Sexta-feira",
-          7: "Sábado",
+          1: "Domingo", 2: "Segunda-feira", 3: "Terça-feira",
+          4: "Quarta-feira", 5: "Quinta-feira", 6: "Sexta-feira", 7: "Sábado",
         };
         const turnos = { 1: "Manhã", 2: "Tarde", 3: "Noite" };
         
-        // Trata valores nulos ou inválidos que podem vir do banco
         const diaNum = Number(dia);
         const turnoNum = Number(turno);
 
@@ -230,14 +218,12 @@
         window.location.href = "authentication.html";
       });
 
-      /* Disciplinas (sem alteração) */
       let discPage = 1,
         discLimit = 10;
       async function loadDisciplinas(page = 1) {
         discPage = page;
         const q = document.getElementById("searchDisc").value.trim();
         try {
-          // tenta server-side
           const res = await fetch(
             `${API}/disciplinas?page=${page}&limit=${discLimit}${
               q ? "&q=" + encodeURIComponent(q) : ""
@@ -282,7 +268,6 @@
         .getElementById("btnLoadDiscs")
         .addEventListener("click", () => loadDisciplinas(1));
 
-      /* Minhas matrículas */
       async function loadMyMats() {
         try {
           const res = await fetch(`${API}/matriculas?me=true`, {
@@ -292,22 +277,21 @@
           const data = await res.json();
           const tbody = document.querySelector("#tableMyMats tbody");
           tbody.innerHTML = "";
-          data.forEach((m) => {
-            /**
-             * ALTERAÇÃO 4: A API de matrículas retorna 'horario_codigo' (ex: "2-1").
-             * Vamos usar nosso helper para traduzir isso.
-             */
-            const parts = (m.horarioCodigo || " - ").split("-"); // "2-1" vira ["2", "1"]
-            const horarioDesc = getHorarioDesc(parts[0], parts[1]); // "Segunda-feira - Manhã"
-
-            tbody.innerHTML += `<tr>
+          data.forEach(
+            (m) => {
+              const parts = (m.horarioCodigo || " - ").replace('-', '').split('');
+              const horarioDesc = getHorarioDesc(parts[0], parts[1]);
+              
+              tbody.innerHTML += `<tr>
                 <td>${m.id}</td>
-                <td>${m.turmaCodigo || m.turma_id}</td>
                 <td>${m.disciplinaNome || ""}</td>
-                <td>${horarioDesc}</td> <td>${m.criadoEm || m.data || ""}</td>
-                <td><button onclick="cancelMyMat('${m.id}')">Cancelar</button></td>
-              </tr>`;
-          });
+                <td>${horarioDesc}</td> <td>${m.created_at || m.data || ""}</td>
+                <td><button onclick="cancelMyMat('${
+                  m.id
+                }')">Cancelar</button></td>
+              </tr>`
+            }
+          );
         } catch (e) {
           console.error(e);
           alert("Erro ao carregar minhas matrículas");
@@ -329,26 +313,20 @@
         } else alert("Erro");
       }
 
-      /* Matricular aluno (usuário atual) */
       async function loadTurmasForMat() {
         const res = await fetch(`${API}/turmas`, { headers: headersAuth() });
         const turmas = await res.json();
         const sel = document.getElementById("selTurmasForMat");
-        sel.innerHTML = '<option value="">Selecione uma turma...</option>'; // Texto Padrão
-        
-        /**
-         * ALTERAÇÃO 5: O seletor de turmas agora mostra o horário.
-         * A API /api/turmas retorna os campos 'dia' e 'turno'
-         * que usamos com nosso helper.
-         */
-        turmas.forEach((t) => {
-          // A API de turmas retorna 'dia' e 'turno' separados
-          const horarioDesc = getHorarioDesc(t.dia, t.turno);
-          
-          sel.innerHTML += `<option value="${t.id}">
-              ${t.codigo || t.nome} — ${t.disciplinaNome || t.disciplina} (${horarioDesc})
-            </option>`;
-        });
+        sel.innerHTML = '<option value="">Selecione uma turma...</option>';
+        turmas.forEach(
+          (t) => {
+
+            const horarioDesc = getHorarioDesc(t.dia, t.turno);
+            const disciplinaNome = t.disciplina ? t.disciplina.nome : (t.disciplinaNome || "Disciplina desconhecida");
+            
+            sel.innerHTML += `<option value="${t.id}">${disciplinaNome} (${horarioDesc})</option>`
+          }
+        );
       }
 
       document
@@ -356,7 +334,6 @@
         .addEventListener("click", async () => {
           const turmaId = document.getElementById("selTurmasForMat").value;
           if (!turmaId) return alert("Escolha turma");
-          // ALUNO faz POST /api/matriculas com { turmaId } (o middleware attachAlunoId usa token)
           const res = await fetch(`${API}/matriculas`, {
             method: "POST",
             headers: headersAuth(),
@@ -366,18 +343,11 @@
             alert("Matriculado");
             loadMyMats();
           } else {
-            // Tenta ler o erro da API (ex: "SEM_VAGAS")
-            try {
-              const err = await res.json();
-              alert("Erro: " + (err?.error?.message || "Erro desconhecido."));
-            } catch(e) {
-              const txt = await res.text();
-              alert("Erro: " + txt);
-            }
+            const txt = await res.text();
+            alert("Erro: " + txt);
           }
         });
 
-      /* Simple pagination renderer (sem alteração) */
       function renderPaginationClient(containerId, total, page, limit, onPage) {
         const container = document.getElementById(containerId);
         container.innerHTML = "";
@@ -399,22 +369,19 @@
         container.appendChild(next);
       }
 
-      /* ALTERAÇÃO 6: O 'alert' agora também mostra o horário da turma */
       window.viewTurmasByDisc = (discId) => {
-        // carregar turmas filtrando por disciplina
         (async () => {
           const res = await fetch(`${API}/turmas?disciplinaId=${discId}`, {
             headers: headersAuth(),
           });
           const lista = await res.json();
-          // abrir modal/simple alert for user choose -> but we will show in a prompt (quick)
           let str =
             "Turmas:\\n" +
             lista
               .map(
                 (t) => {
                   const horarioDesc = getHorarioDesc(t.dia, t.turno);
-                  return `${t.codigo || t.nome} (${horarioDesc}) — ${t.vagas || "?"} vagas`
+                  return `${t.codigo || t.nome} (${horarioDesc}) (${t.vagas || "?"} vagas)`
                 }
               )
               .join("\\n");
