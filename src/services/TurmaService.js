@@ -9,7 +9,30 @@ import { Disciplina } from "../../domain/Disciplina.js";
 import { Professor } from "../../domain/Professor.js";
 
 const formatarRespostaTurma = (turmaDb) => {
-  const horario = new Horario(turmaDb.dia, turmaDb.turno);
+  let horario = null;
+  let horarioInfo = { // Um objeto "placeholder" para quando o horário for nulo
+    codigo: 'N/D',
+    dia: null,
+    turno: null,
+    nomeDia: 'A definir',
+    nomeTurno: 'A definir',
+    descricao: 'Horário a definir',
+  };
+
+  if (turmaDb.dia != null && turmaDb.turno != null) {
+    try {
+      horario = new Horario(turmaDb.dia, turmaDb.turno);
+      horarioInfo = {
+        codigo: horario.codigo(),
+        dia: horario.dia,
+        turno: horario.turno,
+        nomeDia: horario.getNomeDia(),
+        nomeTurno: horario.getNomeTurno(),
+        descricao: horario.getDescricao(),
+      };
+    } catch (e) {
+    }
+  }
   const disciplina = new Disciplina(
     turmaDb.disciplina_id,
     turmaDb.disciplina_codigo,
@@ -40,14 +63,7 @@ const formatarRespostaTurma = (turmaDb) => {
     vagas: turma.vagas,
     vagasDisponiveis: turma.vagasDisponiveis(),
     matriculados: turma.matriculados,
-    horario: {
-      codigo: turma.horario.codigo(),
-      dia: turma.horario.dia,
-      turno: turma.horario.turno,
-      nomeDia: turma.horario.getNomeDia(),
-      nomeTurno: turma.horario.getNomeTurno(),
-      descricao: turma.horario.getDescricao(),
-    },
+    horario: horarioInfo,
     disciplina,
     professor,
   };
@@ -153,7 +169,7 @@ class TurmaService {
     };
 
     await TurmaRepository.update(id, dadosAtualizados);
-    
+
     return this.buscarPorId(id);
   }
 

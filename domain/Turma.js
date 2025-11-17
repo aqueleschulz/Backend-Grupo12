@@ -5,7 +5,7 @@ export class Turma {
     this.id = id;
     this.codigo = codigo;
     this.vagas = vagas;
-    this.horario = horario instanceof Horario ? horario : new Horario(horario.dia, horario.turno);
+    this.horario = horario instanceof Horario ? horario : null;
     this.disciplinaId = disciplinaId;
     this.professorId = professorId;
     this.matriculados = matriculados;
