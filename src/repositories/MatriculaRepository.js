@@ -13,7 +13,7 @@ const MatriculaRepository = {
   },
 
   async listHorariosCodigoAtivosDoAluno(alunoId, { client = pool } = {}) {
-    const sql = `SELECT t.dia || '-' || t.turno AS horario FROM matricula m JOIN turma t ON t.id = m.turma_id WHERE m.aluno_id = $1 AND m.status='ATIVA'`;
+    const sql = `SELECT t.dia || '' || t.turno AS horario FROM matricula m JOIN turma t ON t.id = m.turma_id WHERE m.aluno_id = $1 AND m.status='ATIVA'`;
     const r = await client.query(sql, [alunoId]);
     return r.rows.map(x => x.horario);
   },

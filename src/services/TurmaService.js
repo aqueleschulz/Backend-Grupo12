@@ -138,7 +138,7 @@ class TurmaService {
 
     validarPermissao(usuarioId, turmaAtual.professor_id);
 
-    if (dia || turno) {
+    if (dia != null || turno != null) {
       validarHorario(dia ?? turmaAtual.dia, turno ?? turmaAtual.turno);
     }
     if (disciplinaId && !(await DisciplinaRepository.findById(disciplinaId))) {

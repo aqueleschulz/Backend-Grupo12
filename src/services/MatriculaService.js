@@ -7,7 +7,7 @@ const buildMatriculaResponse = (matricula, turma) => ({
   id: matricula.id,
   alunoId: matricula.aluno_id,
   turmaId: matricula.turma_id,
-  horarioCodigo: turma ? `${turma.dia || ''}-${turma.turno || ''}` : null,
+  horarioCodigo: turma ? `${turma.dia}${turma.turno}` : null,
   status: matricula.status ?? "ATIVA",
   criadoEm: matricula.data,
 });
@@ -30,7 +30,7 @@ class MatriculaService {
       }
 
       const horarioAluno = await MatriculaRepository.listHorariosCodigoAtivosDoAluno(alunoId, { client });
-      const horarioTurma = TurmaRepository.getHorarioCodigo ? TurmaRepository.getHorarioCodigo(turma) : `${turma.dia||''}-${turma.turno||''}`;
+      const horarioTurma = `${turma.dia}${turma.turno}`;
       if (horarioTurma && horarioAluno.includes(horarioTurma)) throw createAppError("CHOQUE_HORARIO");
 
       const nova = await MatriculaRepository.insertMatricula({ alunoId, turmaId }, { client });
@@ -76,4 +76,3 @@ class MatriculaService {
 }
 
 export default new MatriculaService();
-  
